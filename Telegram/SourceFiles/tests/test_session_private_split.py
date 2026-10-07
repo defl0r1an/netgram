@@ -1,0 +1,248 @@
+import re
+from pathlib import Path
+
+
+SOURCE_DIR = Path(__file__).resolve().parents[1]
+ROOT = SOURCE_DIR.parents[1]
+CMAKE = ROOT / "Telegram" / "CMakeLists.txt"
+MTPROTO_DIR = SOURCE_DIR / "mtproto"
+SESSION_PRIVATE_DIR = MTPROTO_DIR / "session" / "private"
+SESSION_H = SESSION_PRIVATE_DIR / "session_private.h"
+SESSION_MAIN = SESSION_PRIVATE_DIR / "session_private.cpp"
+SESSION_TRANSPORT = SESSION_PRIVATE_DIR / "transport.cpp"
+SESSION_TRANSPORT_H = SESSION_PRIVATE_DIR / "transport.h"
+SESSION_TIMINGS_H = SESSION_PRIVATE_DIR / "timings.h"
+SESSION_MESSAGE_HANDLER = SESSION_PRIVATE_DIR / "message_handler.cpp"
+SESSION_MESSAGE_HANDLER_H = SESSION_PRIVATE_DIR / "message_handler.h"
+SESSION_CONNECTION = SESSION_PRIVATE_DIR / "connection.cpp"
+SESSION_SEND = SESSION_PRIVATE_DIR / "send.cpp"
+SESSION_RECEIVE = SESSION_PRIVATE_DIR / "receive.cpp"
+SESSION_AUTH = SESSION_PRIVATE_DIR / "auth.cpp"
+
+
+SPLIT_SOURCES = (
+    SESSION_TRANSPORT,
+    SESSION_TRANSPORT_H,
+    SESSION_TIMINGS_H,
+    SESSION_MESSAGE_HANDLER,
+    SESSION_MESSAGE_HANDLER_H,
+    SESSION_CONNECTION,
+    SESSION_SEND,
+    SESSION_RECEIVE,
+    SESSION_AUTH,
+)
+
+
+def read(path):
+    assert path.exists(), f"missing expected source file: {path}"
+    return path.read_text(encoding="utf-8")
+
+
+def function_body(text, signature):
+    start = text.index(signature)
+    brace = text.index("{", start)
+    depth = 0
+    for index in range(brace, len(text)):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[brace:index + 1]
+    raise AssertionError(f"body not found for {signature}")
+
+
+def declarations_named(header, name):
+    return re.findall(rf"\b{name}\b", header)
+
+
+def test_session_private_split_sources_are_registered():
+    cmake = read(CMAKE)
+
+    for path in SPLIT_SOURCES:
+        relative = path.relative_to(SOURCE_DIR).as_posix()
+        assert relative in cmake
+
+    for old_name in (
+        "session_private_auth.cpp",
+        "session_private_connection.cpp",
+        "session_private_receive.cpp",
+        "session_private_send.cpp",
+    ):
+        assert old_name not in cmake
+        assert not (MTPROTO_DIR / old_name).exists()
+
+
+def test_session_private_header_groups_private_state():
+    header = read(SESSION_H)
+    transport = read(SESSION_TRANSPORT_H)
+
+    for name in (
+        "RequestState",
+        "SessionState",
+        "AuthState",
+    ):
+        assert f"struct {name}" in header
+
+    for name in (
+        "TestConnection",
+        "ConnectionState",
+        "TimingState",
+    ):
+        assert f"struct {name}" in transport
+
+    assert "RequestState _requestState;" in header
+    assert "SessionState _sessionState;" in header
+    assert "AuthState _authState;" in header
+
+    assert not declarations_named(header, "_connection")
+    assert not declarations_named(header, "_sessionData")
+    assert not declarations_named(header, "_keyCreator")
+
+
+def test_session_transport_timers_are_bound_to_session_thread():
+    source = read(SESSION_MAIN)
+    transport = read(SESSION_TRANSPORT)
+    transport_h = read(SESSION_TRANSPORT_H)
+
+    assert ", _transport(\n\tthis,\n\t_runtime,\n\tthread," in source
+    assert "not_null<QThread*> thread" in transport_h
+    assert "not_null<QThread*> thread" in transport
+    assert "RuntimeTimer retryTimer;" in transport_h
+    assert "runtime->async().makeTimer(\n\tthread," in transport
+    assert "base::Timer retryTimer;" not in transport_h
+    assert "makeTimer(\n\tnot_null<QObject*>{ owner->_owner.get() }" not in transport
+
+
+def test_session_components_do_not_grant_reciprocal_friend_access():
+    session_h = read(SESSION_H)
+    transport_h = read(SESSION_TRANSPORT_H)
+    message_handler_h = read(SESSION_MESSAGE_HANDLER_H)
+
+    assert "friend class SessionTransport;" in session_h
+    assert "friend class SessionMessageHandler;" in session_h
+    assert "friend class SessionPrivate;" not in transport_h
+    assert "friend class SessionMessageHandler;" not in transport_h
+    assert "friend class SessionPrivate;" not in message_handler_h
+    assert "friend class SessionTransport;" not in message_handler_h
+
+
+def test_session_transport_state_is_changed_through_transport_methods():
+    receive = read(SESSION_RECEIVE)
+    send = read(SESSION_SEND)
+    auth = read(SESSION_AUTH)
+    session_main = read(SESSION_MAIN)
+    transport_h = read(SESSION_TRANSPORT_H)
+    transport_public = transport_h.split("public:", 1)[1].split("private:", 1)[0]
+
+    assert "_owner->_transport._state" not in receive
+    assert "_owner->_transport._timing" not in receive
+    assert "_transport._state" not in send
+    assert "_transport._timing" not in send
+    assert "_transport._state" not in auth
+    assert "_transport._timing" not in auth
+    assert "_transport._state" not in session_main
+    assert "_transport._timing" not in session_main
+    assert "void requestCDNConfig();" in transport_public
+    assert "_transport.requestCDNConfig();" in auth
+
+
+def test_session_shared_timing_constants_are_not_duplicated():
+    timings = read(SESSION_TIMINGS_H)
+    sources = {
+        "transport.cpp": read(SESSION_TRANSPORT),
+        "connection.cpp": read(SESSION_CONNECTION),
+        "send.cpp": read(SESSION_SEND),
+        "receive.cpp": read(SESSION_RECEIVE),
+    }
+
+    assert "constexpr auto kMinConnectedTimeout" in timings
+    assert "constexpr auto kAckSendWaiting" in timings
+    for source in sources.values():
+        assert "constexpr auto kMinConnectedTimeout" not in source
+        assert "constexpr auto kAckSendWaiting" not in source
+    assert "kMinConnectedTimeout" in sources["transport.cpp"]
+    assert "kMinConnectedTimeout" in sources["connection.cpp"]
+    assert "kAckSendWaiting" in sources["receive.cpp"]
+
+
+def test_transport_and_message_handler_own_bulk_methods():
+    transport = read(SESSION_TRANSPORT)
+    transport_h = read(SESSION_TRANSPORT_H)
+    message_handler = read(SESSION_MESSAGE_HANDLER)
+    message_handler_h = read(SESSION_MESSAGE_HANDLER_H)
+    connection = read(SESSION_CONNECTION)
+    receive = read(SESSION_RECEIVE)
+    header = read(SESSION_H)
+
+    assert "class SessionTransport final" in transport_h
+    assert "SessionTransport::SessionTransport(" in transport
+    assert "SessionTransport::appendTestConnection(" in connection
+    assert "SessionTransport::connectToServer(" in connection
+    assert "SessionTransport::waitReceivedFailed(" in connection
+    assert "SessionTransport::onError(" in connection
+    assert "class SessionMessageHandler final" in message_handler_h
+    assert "enum class HandleResult" in message_handler_h
+    assert "struct OuterInfo" in message_handler_h
+    assert "SessionMessageHandler::handleOneReceived(" in receive
+    assert "SessionMessageHandler::handleMsgContainer(" in receive
+    assert "SessionMessageHandler::handleRpcResult(" in receive
+    assert "SessionPrivate::handleOneReceived(" not in receive
+    assert "SessionPrivate::handleMsgContainer(" not in receive
+    assert "SessionPrivate::handleRpcResult(" not in receive
+    assert "HandleResult handleOneReceived(" not in header
+    assert "HandleResult handleMsgContainer(" not in header
+    assert "HandleResult handleRpcResult(" not in header
+
+
+def test_session_private_main_keeps_only_glue_not_bulk_modules():
+    source = read(SESSION_MAIN)
+
+    forbidden_signatures = (
+        "bool SessionPrivate::appendTestConnection(",
+        "void SessionPrivate::tryToSend(",
+        "SessionPrivate::HandleResult SessionPrivate::handleOneReceived(",
+        "SessionPrivate::HandleResult SessionPrivate::handleBindResponse(",
+        "void SessionPrivate::applyAuthKey(",
+    )
+    for signature in forbidden_signatures:
+        assert signature not in source
+
+    assert "SessionPrivate::SessionPrivate(" in source
+    assert "SessionPrivate::~SessionPrivate(" in source
+    assert "void SessionPrivate::logMtprotoEvent(" in source
+    assert (
+        "SessionMessageHandler::HandleResult "
+        "SessionMessageHandler::handleBindResponse("
+    ) in read(SESSION_AUTH)
+
+
+def test_receive_dispatcher_is_short_and_delegates_cases():
+    source = read(SESSION_RECEIVE)
+    body = function_body(
+        source,
+        "SessionMessageHandler::HandleResult SessionMessageHandler::handleOneReceived(")
+
+    assert len(body.splitlines()) <= 90
+
+    handlers = (
+        ("mtpc_gzip_packed", "handleGzipPacked"),
+        ("mtpc_msg_container", "handleMsgContainer"),
+        ("mtpc_msgs_ack", "handleMsgsAck"),
+        ("mtpc_bad_msg_notification", "handleBadMsgNotification"),
+        ("mtpc_bad_server_salt", "handleBadServerSalt"),
+        ("mtpc_msgs_state_info", "handleMsgsStateInfo"),
+        ("mtpc_msgs_all_info", "handleMsgsAllInfo"),
+        ("mtpc_msg_detailed_info", "handleMsgDetailedInfo"),
+        ("mtpc_msg_new_detailed_info", "handleMsgNewDetailedInfo"),
+        ("mtpc_rpc_result", "handleRpcResult"),
+        ("mtpc_new_session_created", "handleNewSessionCreated"),
+        ("mtpc_pong", "handlePong"),
+    )
+    for constructor, handler in handlers:
+        assert f"case {constructor}:" in body
+        assert f"return {handler}(" in body
+        assert f"SessionMessageHandler::HandleResult SessionMessageHandler::{handler}(" in source
+
+    assert "return handleUpdates(" in body
+    assert "SessionMessageHandler::HandleResult SessionMessageHandler::handleUpdates(" in source

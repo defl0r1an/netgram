@@ -1,0 +1,28 @@
+name: Предложение
+description: Предложить новую возможность или улучшение.
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: Какую задачу это решает
+      placeholder: Опишите, чего сейчас не хватает или что мешает.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Как это должно работать
+      placeholder: Опишите желаемое поведение.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Какие варианты рассматривали
+      placeholder: Другие способы решить ту же задачу, если есть.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Дополнительно
+      placeholder: Снимки экрана, примеры и все, что поможет понять идею.
+    validations:
+      required: false

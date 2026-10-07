@@ -1,0 +1,314 @@
+# netgram: сборка Windows x64 Release на GitHub Actions.
+#
+# Основа - .github/workflows/win.yml официального tdesktop (тег v7.2.10),
+# дополненная тем, что нужно сборке netgram:
+#   * библиотеки собираются только в Release (prepare.py skip-debug),
+#     Qt 6 (qt6) ради отрисовки через QRhi (D3D11);
+#   * Rust нужной версии для моста OpenMLS (e2e_cloud), версия берется
+#     из rust-toolchain.toml моста; tlottie собирает свой Rust в prepare.py;
+#   * кэши ThirdParty, Libraries и Qt сохраняются и после неудачной или
+#     прерванной по таймауту сборки библиотек, под отдельным ключем
+#     "-partial-": следующий запуск продолжит с того же места;
+#   * API id/hash берутся из секретов TDESKTOP_API_ID и TDESKTOP_API_HASH,
+#     без них собирается с тестовыми ключами (-D TDESKTOP_API_TEST=ON).
+# Результат - артефакт с netgram.exe и Updater.exe. Релизы и пакеты
+# автообновления этот workflow не публикует.
+
+name: Windows.
+
+on:
+  push:
+    branches:
+      - netgram
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '!docs/building-win*.md'
+      - 'changelog.txt'
+      - 'LEGAL'
+      - 'LICENSE'
+      - '.github/**'
+      - '!.github/workflows/win.yml'
+      - 'lib/xdg/**'
+      - 'snap/**'
+      - 'Telegram/build/docker/**'
+      - 'Telegram/Resources/uwp/**'
+      - 'Telegram/SourceFiles/platform/linux/**'
+      - 'Telegram/SourceFiles/platform/mac/**'
+      - 'Telegram/SourceFiles/tests/**'
+      - 'Telegram/Telegram/**'
+      - 'Telegram/configure.sh'
+      - 'Telegram/Telegram.plist'
+  workflow_dispatch:
+
+# Новый запуск ждет конца текущего, а не отменяет его: отмена посреди
+# сборки библиотек не сохранила бы кэш.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    env:
+      PREPARE_PATH: "Telegram/build/prepare/prepare.py"
+      RUST_TOOLCHAIN_FILE: "Telegram/SourceFiles/e2e_cloud/mls/openmls_bridge/rust-toolchain.toml"
+      # Сменить, чтобы разом выбросить все кэши (например, после смены
+      # фильтра в шаге "Free up some disk space.").
+      CACHE_VERSION: "v1"
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: Prepare directories.
+        run: |
+          mkdir %userprofile%\TBuild\Libraries
+          mklink /d %GITHUB_WORKSPACE%\TBuild %userprofile%\TBuild
+          echo TBUILD=%GITHUB_WORKSPACE%\TBuild>>%GITHUB_ENV%
+          echo LibrariesPath=%GITHUB_WORKSPACE%\TBuild\Libraries\win64>>%GITHUB_ENV%
+
+      - name: Get repository name.
+        shell: bash
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Clone.
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          path: ${{ env.TBUILD }}\${{ env.REPO_NAME }}
+
+      - name: First set up.
+        shell: bash
+        run: |
+          DOCPATH=$TBUILD/$REPO_NAME/docs/building-win.md
+          SDK="$(grep "SDK version" $DOCPATH | sed -r 's/.*\*\*(.*)\*\* SDK version.*/\1/' | head -n 1 || true)"
+          if [ -z "$SDK" ]; then
+            SDK="10.0.26100.0"
+            echo "SDK version not found in $DOCPATH, using $SDK."
+          fi
+          echo "SDK=$SDK" >> $GITHUB_ENV
+
+          RUST_TOOLCHAIN="$(sed -nE 's/^channel *= *"([^"]+)".*/\1/p' "$TBUILD/$REPO_NAME/$RUST_TOOLCHAIN_FILE")"
+          if [ -z "$RUST_TOOLCHAIN" ]; then
+            echo "Rust toolchain not found in $RUST_TOOLCHAIN_FILE!"
+            exit 1
+          fi
+          echo "RUST_TOOLCHAIN=$RUST_TOOLCHAIN" >> $GITHUB_ENV
+
+          sed -i '/CMAKE_${lang}_FLAGS_DEBUG_INIT/s/${_Zi}//' "$PROGRAMFILES"/CMake/share/cmake*/Modules/Platform/Windows-MSVC.cmake
+
+          sha256sum "$TBUILD/$REPO_NAME/$PREPARE_PATH" | awk '{ print $1 }' >> CACHE_KEY.txt
+          sha256sum "$TBUILD/$REPO_NAME/Telegram/build/prepare/win.bat" | awk '{ print $1 }' >> CACHE_KEY.txt
+          echo "$SDK" >> CACHE_KEY.txt
+          echo "CACHE_KEY=$(sha256sum CACHE_KEY.txt | awk '{ print $1 }')" >> $GITHUB_ENV
+
+          echo "Configurate git for cherry-picks."
+          git config --global user.email "you@example.com"
+          git config --global user.name "Sample"
+
+      - uses: Eden-CI/msvc-dev-cmd@master
+        name: Native Tools Command Prompt.
+        with:
+          arch: x64
+          sdk: ${{ env.SDK }}
+          toolset: '14.44'
+
+      - name: Rust toolchain.
+        run: |
+          rustup toolchain install %RUST_TOOLCHAIN% --profile minimal
+          rustup target add --toolchain %RUST_TOOLCHAIN% x86_64-pc-windows-msvc
+          rustc +%RUST_TOOLCHAIN% --version
+          cargo +%RUST_TOOLCHAIN% --version
+
+      - name: NuGet sources.
+        run: |
+          nuget sources Disable -Name "Microsoft Visual Studio Offline Packages"
+          nuget sources Add -Source https://api.nuget.org/v3/index.json & exit 0
+
+      - name: ThirdParty cache (restore).
+        id: cache-third-party
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.TBUILD }}\ThirdParty
+          key: ${{ runner.OS }}-${{ runner.arch }}-third-party-${{ env.CACHE_VERSION }}-${{ env.CACHE_KEY }}
+          restore-keys: |
+            ${{ runner.OS }}-${{ runner.arch }}-third-party-${{ env.CACHE_VERSION }}-${{ env.CACHE_KEY }}
+            ${{ runner.OS }}-${{ runner.arch }}-third-party-${{ env.CACHE_VERSION }}-
+
+      - name: Libraries cache (restore).
+        id: cache-libs
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ${{ env.LibrariesPath }}\*
+            !${{ env.LibrariesPath }}\cache_keys
+            !${{ env.LibrariesPath }}\[qQ]t[_-]*
+            ${{ env.LibrariesPath }}\cache_keys\*
+            !${{ env.LibrariesPath }}\cache_keys\[qQ]t[_-]*
+          key: ${{ runner.OS }}-x64-libs-${{ env.CACHE_VERSION }}-${{ env.CACHE_KEY }}
+          restore-keys: |
+            ${{ runner.OS }}-x64-libs-${{ env.CACHE_VERSION }}-${{ env.CACHE_KEY }}
+            ${{ runner.OS }}-x64-libs-${{ env.CACHE_VERSION }}-
+
+      - name: Qt cache (restore).
+        id: cache-qt
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ${{ env.LibrariesPath }}\[qQ]t[_-]*
+            ${{ env.LibrariesPath }}\cache_keys\[qQ]t[_-]*
+          key: ${{ runner.OS }}-x64-qt6-${{ env.CACHE_VERSION }}-${{ env.CACHE_KEY }}
+          restore-keys: |
+            ${{ runner.OS }}-x64-qt6-${{ env.CACHE_VERSION }}-${{ env.CACHE_KEY }}
+            ${{ runner.OS }}-x64-qt6-${{ env.CACHE_VERSION }}-
+
+      # prepare.py считает этап готовым, если есть его каталог и ключ
+      # в cache_keys, внутрь каталога он не смотрит. Обрезанный кэш
+      # (нулевые .lib, вычищенные исходники nv-codec-headers) иначе был бы
+      # принят как есть; удаление ключа заставляет пересобрать только
+      # этот этап.
+      - name: Verify restored caches.
+        shell: bash
+        run: |
+          shopt -s nullglob
+          check_tree() {
+            local root="$1"
+            [ -d "$root/cache_keys" ] || return 0
+            local key name dir
+            for key in "$root"/cache_keys/*; do
+              name="$(basename "$key")"
+              dir="$root/$name"
+              if [ ! -d "$dir" ]; then
+                rm -f "$key"; echo "smoke: $name -> orphan key, will rebuild"; continue
+              fi
+              if [ -n "$(find "$dir" -type f \( -name '*.lib' -o -name '*.a' -o -name '*.exe' \) -size 0 -print -quit)" ]; then
+                rm -f "$key"; echo "smoke: $name -> zero-byte artifact, will rebuild"; continue
+              fi
+            done
+          }
+          check_sources() {
+            local root="$1" name="$2" probe="$3"
+            [ -d "$root/$name" ] || return 0
+            [ -f "$root/$name/$probe" ] && return 0
+            rm -f "$root/cache_keys/$name"
+            echo "smoke: $name -> sources trimmed ($probe missing), will rebuild"
+          }
+          check_tree "${LibrariesPath//\\//}"
+          check_tree "${TBUILD//\\//}/ThirdParty"
+          check_sources "${LibrariesPath//\\//}" nv-codec-headers Makefile
+          echo "smoke: cache verification done"
+
+      - name: Libraries.
+        id: build-libs
+        timeout-minutes: 300
+        run: |
+          %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat skip-debug silent qt6
+
+      # Оставляет только результаты сборки и то немногое, что читают
+      # последующие этапы: *.pc (configure ffmpeg ищет dav1d, opus и др.
+      # через pkg-config) и Makefile (build_ffmpeg_win.sh делает make install
+      # в nv-codec-headers). При изменении фильтра сменить CACHE_VERSION.
+      - name: Free up some disk space.
+        if: ${{ !cancelled() && steps.build-libs.outcome != 'skipped' }}
+        shell: bash
+        run: find $LibrariesPath '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -name 'Makefile' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -path '*/nv-codec-headers/*' ')' -type f ')' -o -empty ')' -delete
+
+      # Кэши сохраняются до сборки самого клиента. После неудачной сборки
+      # библиотек - под ключем "-partial-<запуск>": prepare.py пишет ключ
+      # этапа только после его успешной сборки, а недособранный этап
+      # перед пересборкой удаляет, так что частичный кэш безопасен.
+      - name: ThirdParty cache (save).
+        if: >-
+          !cancelled()
+          && steps.build-libs.outcome != 'skipped'
+          && steps.cache-third-party.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.TBUILD }}\ThirdParty
+          key: ${{ steps.build-libs.outcome == 'success' && steps.cache-third-party.outputs.cache-primary-key || format('{0}-partial-{1}-{2}', steps.cache-third-party.outputs.cache-primary-key, github.run_id, github.run_attempt) }}
+
+      - name: Libraries cache (save).
+        if: >-
+          !cancelled()
+          && steps.build-libs.outcome != 'skipped'
+          && steps.cache-libs.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ${{ env.LibrariesPath }}\*
+            !${{ env.LibrariesPath }}\cache_keys
+            !${{ env.LibrariesPath }}\[qQ]t[_-]*
+            ${{ env.LibrariesPath }}\cache_keys\*
+            !${{ env.LibrariesPath }}\cache_keys\[qQ]t[_-]*
+          key: ${{ steps.build-libs.outcome == 'success' && steps.cache-libs.outputs.cache-primary-key || format('{0}-partial-{1}-{2}', steps.cache-libs.outputs.cache-primary-key, github.run_id, github.run_attempt) }}
+
+      - name: Qt cache (save).
+        if: >-
+          !cancelled()
+          && steps.build-libs.outcome != 'skipped'
+          && steps.cache-qt.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ${{ env.LibrariesPath }}\[qQ]t[_-]*
+            ${{ env.LibrariesPath }}\cache_keys\[qQ]t[_-]*
+          key: ${{ steps.build-libs.outcome == 'success' && steps.cache-qt.outputs.cache-primary-key || format('{0}-partial-{1}-{2}', steps.cache-qt.outputs.cache-primary-key, github.run_id, github.run_attempt) }}
+
+      - name: netgram build.
+        env:
+          NETGRAM_API_ID: ${{ secrets.TDESKTOP_API_ID }}
+          NETGRAM_API_HASH: ${{ secrets.TDESKTOP_API_HASH }}
+        run: |
+          cd %TBUILD%\%REPO_NAME%\Telegram
+
+          set "API=-D TDESKTOP_API_TEST=ON"
+          set "API_SOURCE=test credentials (secrets TDESKTOP_API_ID and TDESKTOP_API_HASH are not set)"
+          if not "%NETGRAM_API_ID%"=="" if not "%NETGRAM_API_HASH%"=="" set "API=-D TDESKTOP_API_ID=%NETGRAM_API_ID% -D TDESKTOP_API_HASH=%NETGRAM_API_HASH%"
+          if not "%NETGRAM_API_ID%"=="" if not "%NETGRAM_API_HASH%"=="" set "API_SOURCE=repository secrets"
+          echo Telegram API: %API_SOURCE%.
+
+          call configure.bat ^
+          -G "Ninja Multi-Config" ^
+          qt6 ^
+          %API% ^
+          -D CMAKE_CONFIGURATION_TYPES=Release ^
+          -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF ^
+          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF
+          if errorlevel 1 exit /b 1
+
+          cmake --build ..\out --config Release --parallel
+          if errorlevel 1 exit /b 1
+
+      - name: Move artifact.
+        run: |
+          set OUT=%TBUILD%\%REPO_NAME%\out\Release
+          mkdir artifact
+          if exist %OUT%\netgram.exe (move %OUT%\netgram.exe artifact\) else (move %OUT%\Telegram.exe artifact\)
+          if errorlevel 1 exit /b 1
+          move %OUT%\Updater.exe artifact\
+          if errorlevel 1 exit /b 1
+          if exist %OUT%\modules\x64\d3d\d3dcompiler_47.dll (
+            mkdir artifact\modules\x64\d3d
+            copy %OUT%\modules\x64\d3d\d3dcompiler_47.dll artifact\modules\x64\d3d\
+          )
+
+      - uses: actions/upload-artifact@v7
+        name: Upload artifact.
+        with:
+          name: netgram-win64-${{ github.sha }}
+          path: artifact\
+          retention-days: 14

@@ -1,0 +1,24 @@
+[Desktop Entry]
+Name=netgram
+Comment=Telegram client for networks with DPI restrictions
+Comment[ru]=Клиент Telegram для сетей с DPI-ограничениями
+TryExec=netgram
+Exec=env DESKTOPINTEGRATION=1 netgram -- %U
+Icon=io.github.defl0r1an.netgram
+Terminal=false
+StartupWMClass=netgram
+Type=Application
+Categories=Chat;Network;InstantMessaging;Qt;
+MimeType=x-scheme-handler/tg;x-scheme-handler/tonsite;
+Keywords=tg;chat;im;messaging;messenger;sms;telegram;tdesktop;netgram;
+Actions=quit;
+DBusActivatable=true
+SingleMainWindow=true
+X-GNOME-UsesNotifications=true
+X-GNOME-SingleWindow=true
+
+[Desktop Action quit]
+Exec=netgram -quit
+Name=Quit netgram
+Name[ru]=Выйти из netgram
+Icon=application-exit

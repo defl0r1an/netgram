@@ -1,0 +1,56 @@
+name: Ошибка
+description: Сообщить об ошибке или неожиданном поведении netgram.
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: Как воспроизвести
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Что ожидалось
+      placeholder: Как должно было быть.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Что происходит на самом деле
+      placeholder: Как получилось на самом деле.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Операционная система
+      description: Точная версия, например Windows 11 24H2.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Версия netgram
+      description: Точный номер версии, а не «последняя».
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Откуда установлен
+      multiple: false
+      options:
+        - Релиз на GitHub
+        - Артефакт сборки GitHub Actions
+        - Собран самостоятельно
+        - Другое
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Журнал
+      description: >
+        Наберите слово `viewlogs` прямо в окне настроек, откроется папка
+        с журналами. Удалите из журнала то, чем не хотите делиться.
+      placeholder: Содержимое log.txt
+      render: shell

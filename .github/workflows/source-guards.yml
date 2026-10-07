@@ -1,0 +1,51 @@
+# Быстрые проверки исходников без сборки. Список обязательных
+# проверок - Telegram/SourceFiles/tests/release_guards.txt.
+
+name: Source guards.
+
+on:
+  push:
+    branches:
+      - netgram
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    name: Source guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout.
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate source tree.
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          test -f CMakeLists.txt
+          test -f Telegram/configure.py
+          test -f Telegram/configure.sh
+          bash -n Telegram/configure.sh
+
+      - name: Validate Python build helpers.
+        run: python3 -m compileall -q Telegram/build Telegram/configure.py Telegram/Resources/art/netgram
+
+      - name: Run canonical release source guards.
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r guard; do
+            guard="${guard%$'\r'}"
+            [ -z "$guard" ] && continue
+            echo "::group::$guard"
+            python3 "$guard"
+            echo "::endgroup::"
+          done < Telegram/SourceFiles/tests/release_guards.txt

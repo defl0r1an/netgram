@@ -1,0 +1,162 @@
+/*
+This file is part of Telegram Desktop,
+the official desktop application for the Telegram messaging service.
+
+For license and copyright information please follow this link:
+https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
+*/
+#pragma once
+
+#include "mtproto/transport/details/mtproto_abstract_socket.h"
+
+#include <QtNetwork/QSslSocket>
+
+#include <optional>
+
+namespace MTP::details {
+
+struct WssRoute {
+	QString relayHost;
+	QString relayHostFallback; // retried once if relayHost fails (e.g. domain)
+	int relayPort = 443;
+	QString domain;
+	QString path;
+	bool tunnel = false; // path gets ?dst=<datacenter address> on connect
+	// Position in the Cloudflare front catalog (kwsN.<front domain>), or -1.
+	// The front forwards the WebSocket to Telegram Web itself, so unlike the
+	// tunnel it needs no destination and carries the byte stream as is.
+	int cdnSlot = -1;
+	int cdnDcId = 0;
+	// Failure counting and suppression key when it must not follow the
+	// domain: every front domain of a DC shares one health record.
+	QString healthDomain;
+	// Network the route was chosen on (see WssTrackNetwork): its failures
+	// count against that network only, even when reported after a switch.
+	bool metered = false;
+};
+
+// A phone's hotspot (Windows marks Android tethering as metered) reaches
+// Telegram through the mobile operator, whose blocks differ from the home
+// provider's. Relay health, suppression and the IP/DNS preference are kept
+// separately for metered and unmetered networks. Call on the main thread.
+void WssTrackNetwork();
+
+// A passive snapshot for user-facing media diagnostics. It observes the
+// relay preference and health maps, but never changes connection admission,
+// retry timing or the lifetime of a live session.
+struct WssRouteDiagnostics {
+	std::optional<WssRoute> route;
+	QString selectedRelayHost;
+	bool custom = false;
+	bool prefersFallback = false;
+	bool suppressed = false;
+	int consecutiveFailures = 0;
+	crl::time suppressedFor = 0;
+};
+
+// Official MTProto-over-WebSocket route for a data center, mirroring the
+// web.telegram.org transport; while the DC's relay is suppressed, the
+// Cloudflare fronts of tg-ws-proxy (kwsN.<front domain>), then the tunnel.
+// With everything suppressed the fronts stay the floor: the direct TCP this
+// used to fall back to is what the blocking networks close.
+//
+// Every production DC (1-5) has a working web relay, but the ingress addresses are NOT interchangeable: each one serves
+// only its own datacenters. Reaching the wrong ingress answers 302 (with an
+// X-Redirect-Host header naming the right relay) or accepts the connection
+// and stays silent - which is where the widespread "web sockets exist only
+// for DC2/DC4" belief came from. Measured against live relays 2026-08-08.
+[[nodiscard]] std::optional<WssRoute> WssOfficialRoute(
+	int16 protocolDcId);
+
+// The relay of this DC has not answered on this network yet, or failed since
+// it last did, while it is not suppressed. A session then races a Cloudflare
+// front (WssFrontRoute) against it instead of waiting for the relay to be
+// suppressed first.
+[[nodiscard]] bool WssRelayUnproven(int16 protocolDcId);
+[[nodiscard]] std::optional<WssRoute> WssFrontRoute(int16 protocolDcId);
+
+// Expert-only user-configured relay (ProxyStealthOptions.wssCustom*), used
+// for any DC when set and verified against the configured relay domain.
+[[nodiscard]] std::optional<WssRoute> WssCustomRoute(
+	const ProxyStealthOptions &stealth);
+
+[[nodiscard]] WssRouteDiagnostics WssRouteDiagnosticsForDc(
+	const ProxyStealthOptions &stealth,
+	int16 protocolDcId);
+
+// The media relay of this DC is suppressed and its files go through the
+// Cloudflare tunnel, where every connection freezes after ~16 KB downstream.
+// File downloads then use small parts over many short-lived connections.
+[[nodiscard]] bool WssMediaTunneled(int dcId);
+
+// A clean, self-contained MTProto-over-WebSocket(-over-TLS) transport. It
+// speaks RFC 6455 over a real QSslSocket and carries the obfuscated MTProto
+// stream transparently inside binary frames, so the rest of the connection
+// stack (obfuscation, protocol negotiation) is unchanged.
+class WssSocket final : public AbstractSocket {
+public:
+	WssSocket(
+		not_null<RuntimeEnvironment*> runtime,
+		not_null<QThread*> thread,
+		const QNetworkProxy &proxy,
+		bool protocolForFiles,
+		WssRoute route);
+	~WssSocket();
+
+	void connectToHost(const QString &address, int port) override;
+	bool isGoodStartNonce(bytes::const_span nonce) override;
+	void timedOut() override;
+	[[nodiscard]] bool takeRotation() override;
+	[[nodiscard]] bool plainDcMarker() const override;
+	bool isConnected() override;
+	bool hasBytesAvailable() override;
+	int64 read(bytes::span buffer) override;
+	void write(bytes::const_span prefix, bytes::const_span buffer) override;
+
+	int32 debugState() override;
+	QString debugPostfix() const override;
+	HandshakePhase handshakePhase() const override;
+	QString transportName() const override;
+
+private:
+	void handleError(int errorCode);
+	void connectToRelayHost();
+	void onTcpConnected();
+	void onEncrypted();
+	void onReadyRead();
+	void sendHttpUpgrade();
+	[[nodiscard]] bool tryFinishUpgrade();
+	[[nodiscard]] bool checkUpgradeAccept(const QByteArray &header) const;
+	[[nodiscard]] bool retryRefusedUpgrade(const QByteArray &header);
+	[[nodiscard]] bool outputDrained() const;
+	void noteFrontFailed();
+	void parseFrames();
+	void sendFrame(quint8 opcode, bytes::const_span data);
+
+	QSslSocket _socket;
+	WssRoute _route;
+	QString _secWebSocketKey;
+	QByteArray _incoming;
+	QByteArray _readBuffer;
+	bool _upgraded = false;
+	bool _usedFallback = false;
+	bool _hostFlipped = false;
+	QString _currentHost;
+	bool _tcpConnected = false;
+	qint64 _bytesReceived = 0;
+	qint64 _bytesSent = 0;
+	bool _tunnelProven = false;
+	bool _frontAnswered = false;
+	bool _frontProven = false;
+	bool _frontFailureNoted = false;
+	int _upgradeRetries = 0;
+	bool _forFiles = false;
+	bool _rotated = false;
+	crl::time _openedAt = 0;
+	crl::time _upgradedAt = 0;
+	crl::time _firstDataAt = 0;
+	HandshakePhase _phase = HandshakePhase::None;
+
+};
+
+} // namespace MTP::details

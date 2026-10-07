@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=io.github.defl0r1an.netgram
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/netgram

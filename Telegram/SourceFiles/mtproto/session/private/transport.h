@@ -1,0 +1,171 @@
+/*
+This file is part of Telegram Desktop,
+the official desktop application for the Telegram messaging service.
+
+For license and copyright information please follow this link:
+https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
+*/
+#pragma once
+
+#include "mtproto/config/mtproto_dc_options.h"
+#include "mtproto/proxy/dial_pacer.h"
+#include "mtproto/runtime/connection_status_types.h"
+#include "mtproto/runtime/runtime_environment.h"
+#include "mtproto/transport/connection_abstract.h"
+
+namespace MTP::details {
+
+class SessionPrivate;
+
+class SessionTransport final {
+public:
+	SessionTransport(
+		not_null<SessionPrivate*> owner,
+		not_null<RuntimeEnvironment*> runtime,
+		not_null<QThread*> thread,
+		uint64 proxyGeneration);
+	~SessionTransport();
+
+	void start();
+	void connectToServer(bool afterConfig = false);
+	void requestCDNConfig();
+	void restartNow();
+	void migrateProxy(uint64 generation);
+	void restart();
+	void doDisconnect();
+	void destroyAllConnections(
+		ProxyCloseOrigin origin = ProxyCloseOrigin::OwnerDestroyed);
+	void onSentSome(uint64 size);
+	void onReceivedSome();
+	void startContainerCleanup();
+	void retryByTimer();
+	void waitConnectedFailed();
+	void waitReceivedFailed();
+	void waitBetterFailed();
+	void markConnectionOld();
+	void confirmBestConnection();
+	void removeTestConnection(not_null<AbstractConnection*> connection);
+	void setRetryTimeout(int timeout);
+	void scheduleRetryTimeout(int timeout);
+	void schedulePing(crl::time timeout);
+	void scheduleCheckSentRequests(crl::time timeout);
+	void scheduleClearOldContainers(crl::time timeout, bool repeated);
+	void resetRetryTimeout();
+	void noteMtprotoPayloadReceived();
+	void logInfo(const QString &message) const;
+	void sendData(
+		mtpBuffer &&buffer,
+		AbstractConnection::SendDataContext context);
+	[[nodiscard]] bool retryTimerActive() const;
+	[[nodiscard]] bool checkSentRequestsTimerActive() const;
+	[[nodiscard]] bool clearOldContainersTimerActive() const;
+	[[nodiscard]] int retryTimeout() const;
+	[[nodiscard]] qint64 retryWillFinish() const;
+	[[nodiscard]] AbstractConnection *connection() const;
+	[[nodiscard]] bool hasReceivedData() const;
+	[[nodiscard]] mtpBuffer takeReceivedData();
+	[[nodiscard]] QString activeTransport() const;
+	[[nodiscard]] QString connectionTag() const;
+	[[nodiscard]] crl::time connectionPingTime() const;
+	[[nodiscard]] AbstractConnection::TransportServiceRequest serviceRequest()
+		const;
+	[[nodiscard]] bool serviceRequestNeeded(
+		AbstractConnection::TransportServiceRequest request) const;
+	[[nodiscard]] mtpBuffer prepareSecurePacket(
+		uint64 keyId,
+		MTPint128 msgKey,
+		uint32 size) const;
+	[[nodiscard]] bool empty() const;
+	[[nodiscard]] ProxyConnectionAttempt currentProxyAttempt() const;
+	// Reconnecting after a planned rotation of a tunnel file connection:
+	// the routine connect/ready lines are not logged for it.
+	[[nodiscard]] bool quietReconnect() const {
+		return _quietReconnect;
+	}
+
+private:
+	struct TestConnection {
+		ConnectionPointer data;
+		int priority = 0;
+		QString endpoint;
+		ProxyConnectionUse mtproxyUse = ProxyConnectionUse::Main;
+		ProxyConnectionAttempt mtproxyAttempt;
+		crl::time mtproxyAttemptStartedAt = 0;
+
+		// Held from the moment the attempt is queued until the proxy either
+		// relays a Telegram reply or the attempt dies with the entry.
+		ProxyDialLease mtproxyDial;
+		crl::time mtproxyDialDelay = 0;
+
+		// A Cloudflare front raced against a relay that is not proven yet.
+		bool wssFront = false;
+	};
+	struct ConnectionState {
+		ConnectionPointer connection;
+		ProxyConnectionUse mtproxyUse = ProxyConnectionUse::Main;
+		ProxyConnectionAttempt mtproxyAttempt;
+		crl::time mtproxyAttemptStartedAt = 0;
+		uint64 proxyGeneration = 0;
+		bool mtprotoDataReceived = false;
+		int mtprotoSilentTimeouts = 0;
+
+		// -404 received through a WEB proxy stream since the key last
+		// decrypted a reply, see handleError().
+		int webKeyNotFoundStrikes = 0;
+		std::vector<TestConnection> testConnections;
+		crl::time startedConnectingAt = 0;
+	};
+	struct TimingState {
+		TimingState(
+			not_null<RuntimeEnvironment*> runtime,
+			not_null<SessionTransport*> owner,
+			not_null<QThread*> thread);
+
+		RuntimeTimer retryTimer;
+		int retryTimeout = 1;
+		qint64 retryWillFinish = 0;
+		RuntimeTimer oldConnectionTimer;
+		bool oldConnection = true;
+		RuntimeTimer waitForConnectedTimer;
+		RuntimeTimer waitForReceivedTimer;
+		RuntimeTimer waitForBetterTimer;
+		crl::time waitForReceived = 0;
+		crl::time waitForReceivedStartedAt = 0;
+		QString waitForReceivedDetails;
+		bool waitForReceivedExtended = false;
+		crl::time waitForConnected = 0;
+		crl::time waitForConnectedArmed = 0;
+		crl::time firstSentAt = -1;
+		RuntimeTimer pingSender;
+		RuntimeTimer checkSentRequestsTimer;
+		RuntimeTimer clearOldContainersTimer;
+	};
+
+	[[nodiscard]] ProxyConnectionUse classifyEndpointUse() const;
+	[[nodiscard]] bool appendTestConnection(
+		DcOptions::Variants::Protocol protocol,
+		const QString &ip,
+		int port,
+		const bytes::vector &protocolSecret,
+		bool protocolForFiles,
+		bool wssFront = false);
+	void noteRelayRaceLost(not_null<AbstractConnection*> winner);
+	void connectingTimedOut();
+	[[nodiscard]] bool webProxy() const;
+	[[nodiscard]] bool extendWebProxyReceiveWait();
+	void handleError(int errorCode);
+	void onError(
+		not_null<AbstractConnection*> connection,
+		qint32 errorCode);
+	void onConnected(not_null<AbstractConnection*> connection);
+	void onDisconnected(not_null<AbstractConnection*> connection);
+	void clearTestConnections();
+	void armWaitForConnectedTimer();
+
+	const not_null<SessionPrivate*> _owner;
+	ConnectionState _state;
+	bool _quietReconnect = false;
+	TimingState _timing;
+};
+
+} // namespace MTP::details

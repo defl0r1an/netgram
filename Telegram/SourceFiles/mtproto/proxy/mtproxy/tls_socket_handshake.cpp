@@ -1,0 +1,443 @@
+/*
+This file is part of Telegram Desktop,
+the official desktop application for the Telegram messaging service.
+
+For license and copyright information please follow this link:
+https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
+*/
+#include "mtproto/proxy/mtproxy/tls_socket.h"
+
+#include "mtproto/proxy/mtproxy/handshake_plan.h"
+
+#include "base/algorithm.h"
+#include "base/invoke_queued.h"
+#include "base/openssl_help.h"
+#include "base/unixtime.h"
+#include "mtproto/proxy/mtproxy/client_hello_builder.h"
+#include "mtproto/proxy/mtproxy/client_hello_constants.h"
+#include "mtproto/proxy/mtproxy/tls_socket_psk.h"
+#include "mtproto/proxy/mtproxy/tls_socket_utils.h"
+#include "mtproto/proxy/diagnostics.h"
+#include "mtproto/proxy/proxy_services.h"
+#include "mtproto/runtime/runtime_environment.h"
+
+namespace MTP::details {
+namespace {
+
+const auto kServerHelloPart1 = qstr("\x16\x03\x03");
+const auto kServerHelloPart3 = qstr("\x14\x03\x03\x00\x01\x01\x17\x03\x03");
+constexpr auto kServerHelloDigestPosition = 11;
+constexpr auto kMaxServerHelloLength = 65536;
+
+// The size of the answer does not say who wrote it, so nothing here reads it.
+// A relay fills its first application data record with random bytes sized to
+// the domain it fronts for, so a working relay behind a heavy domain answers
+// in kilobytes and one behind a light domain in a couple of hundred bytes;
+// measured against two live relays, a verified answer of 3381 bytes on one
+// and 196 on the other, against 184 and 196 on their camouflage paths. On the
+// first the camouflage reply is the smaller of the two. Any byte threshold
+// mislabels one of them, so the verdict comes from the hello we sent instead.
+
+} // namespace
+
+void TlsSocket::writeClientHello(const QByteArray &data) {
+	_clientHelloFragmentTimer.cancel();
+	_clientHelloTail = QByteArray();
+	_clientHelloBytes = data.size();
+	_clientHelloFragmentSplit = 0;
+	_clientHelloFragmentDelayMs = 0;
+	const auto plan = PrepareClientHelloFragmentation(
+		data,
+		_clientHelloFragmentation);
+	if (!plan) {
+		writeClientHelloPart(data.constData(), data.size());
+		// The socket only queues what it is given and sends it when its thread
+		// next runs the event loop. Everything after this point is waiting on
+		// the answer - the ServerHello deadline starts in
+		// finishClientHelloWrite() - so a hello still sitting in that queue is
+		// indistinguishable from a relay that never replied. The fragmented
+		// path below has always flushed; this one has to as well.
+		_transport->flush();
+		finishClientHelloWrite();
+		return;
+	}
+	_clientHelloFragmented = true;
+	_clientHelloFragmentSplit = plan.firstSize;
+	_clientHelloFragmentDelayMs = plan.secondDelay;
+	writeClientHelloPart(data.constData(), plan.firstSize);
+	_transport->flush();
+	_clientHelloTail = data.mid(plan.firstSize);
+	if (_clientHelloTail.isEmpty()) {
+		finishClientHelloWrite();
+		return;
+	}
+	if (plan.secondDelay > 0) {
+		_clientHelloFragmentTimer.callOnce(plan.secondDelay);
+	} else {
+		writeClientHelloTail();
+	}
+}
+
+void TlsSocket::writeClientHelloPart(const char *data, int size) {
+	auto offset = 0;
+	while (offset < size) {
+		++_clientHelloWrites;
+		const auto accepted = _transport->write(data + offset, size - offset);
+		if (accepted <= 0) {
+			break;
+		}
+		_clientHelloAcceptedBytes += accepted;
+		offset += int(accepted);
+	}
+}
+
+void TlsSocket::writeClientHelloTail() {
+	const auto tail = base::take(_clientHelloTail);
+	if (tail.isEmpty()) {
+		return;
+	}
+	writeClientHelloPart(tail.constData(), tail.size());
+	// Same reason as the whole-hello path: the deadline starts here, so the
+	// bytes have to be on their way and not in a queue.
+	_transport->flush();
+	finishClientHelloWrite();
+}
+
+void TlsSocket::finishClientHelloWrite() {
+	if (_terminal
+		|| _phase != HandshakePhase::TcpConnected
+		|| !_clientHelloTail.isEmpty()
+		|| _clientHelloBytes <= 0
+		|| _clientHelloAcceptedBytes != _clientHelloBytes) {
+		return;
+	}
+	_phase = HandshakePhase::ClientHelloSent;
+	armServerHelloDeadline();
+	connectionProgress(_phase);
+	reportTransportEvent(
+		ProxyDiagnosticsPhase::ClientHelloSent,
+		ProxyDiagnosticsSeverity::Info,
+		u"mtproxy client hello queued locally"_q);
+}
+
+void TlsSocket::plainConnected() {
+	if (_state != State::Connecting) {
+		return;
+	}
+	_phase = HandshakePhase::TcpConnected;
+	_tcpConnectedAt = crl::now();
+
+	// Nagle holds a small write back until the previous one is acknowledged,
+	// which is exactly the shape of mtproto traffic: one short request, then
+	// waiting. Qt only applies socket options once the engine exists, that
+	// is after the connection is up, so this belongs here and not in the
+	// constructor next to the buffer sizes.
+	_transport->setSocketOption(QAbstractSocket::LowDelayOption, 1);
+
+	connectionProgress(_phase);
+	reportTransportEvent(
+		ProxyDiagnosticsPhase::TcpConnected,
+		ProxyDiagnosticsSeverity::Info,
+		u"mtproxy tcp connected"_q);
+
+	const auto delay = MtProxy::ConnectionSpacing(_connectionPattern);
+	if (delay > 0) {
+		_clientHelloTimer.callOnce(delay);
+	} else {
+		sendClientHello();
+	}
+}
+
+void TlsSocket::sendClientHello() {
+	if (_state != State::Connecting) {
+		return;
+	}
+	const auto profile = effectiveTlsProfile();
+	_sentTlsProfile = profile;
+	const auto rules = PrepareClientHelloRules(profile);
+	auto pskOffer = std::optional<SyntheticPskOffer>();
+	_clientHelloFragmented = false;
+	if (_stealth.syntheticPsk) {
+		pskOffer = _runtime->proxyServices().syntheticPsks().prepareOffer(
+			MtProxy::EndpointKey(_endpointId.canonical),
+			domainFromSecret(),
+			profile);
+	}
+	_syntheticPskOffered = pskOffer.has_value();
+	const auto hello = PrepareClientHello(
+		rules,
+		domainFromSecret(),
+		keyFromSecret(),
+		profile,
+		std::move(pskOffer));
+	if (hello.data.isEmpty()) {
+		logError(888, "Could not generate Client Hello.");
+		handleError(MtProxy::FailureReason::ProxyProtocolBadResponse);
+	} else {
+		noteClientHelloClock(hello.timestamp);
+		checkClientHelloContract(hello.data);
+		_state = State::WaitingHello;
+		_incoming = hello.digest;
+		writeClientHello(hello.data);
+	}
+}
+
+void TlsSocket::noteClientHelloClock(TimeId timestamp) {
+	// Snapshot, not a computation done later: an MTProto time update clears
+	// the HTTP correction as a side effect, so the references present when
+	// the hello was built may be gone a moment after.
+	const auto local = (TimeId)::time(nullptr);
+	_clientHelloTimestamp = timestamp;
+	// Deliberately not "did the correction move the clock". A shift under
+	// three seconds is skipped by base::unixtime::update(), so a machine whose
+	// clock is right ends up with a zero shift - and inferring the reference
+	// from the shift would put a warning in front of exactly the users whose
+	// clocks are fine, on every hello, while staying silent for the ones
+	// already off by the three seconds a relay refuses. What matters is
+	// whether a server ever told us the time.
+	_clockFromMtproto = ServerTimeReceived();
+	_clockFromHttp = base::unixtime::http_valid();
+	_clockSkew = timestamp ? (local - timestamp) : 0;
+	if (_clockFromMtproto || _clockFromHttp) {
+		return;
+	}
+	// Warn on the absence of a reference, never on the size of the skew:
+	// with no reference the skew is zero by construction and says nothing.
+	reportTransportEvent(
+		ProxyDiagnosticsPhase::ClientHelloSent,
+		ProxyDiagnosticsSeverity::Warning,
+		u"mtproxy client hello carries the raw system clock: no time "
+		"reference obtained, and a clock more than three seconds fast is "
+		"refused by the relay"_q);
+}
+
+void TlsSocket::checkClientHelloContract(const QByteArray &hello) {
+	const auto domain = domainFromSecret();
+	_clientHelloContract = CheckClientHelloContract(
+		hello,
+		QByteArray(
+			reinterpret_cast<const char*>(domain.data()),
+			int(domain.size())));
+	if (_clientHelloContract == ClientHelloContractIssue::None) {
+		return;
+	}
+	// Deliberately not fatal. A relay that disagrees with this list still gets
+	// its chance, because a false alarm here would take away a connection that
+	// works; what the check buys is a log line naming the cause at the moment
+	// it is created, instead of an unsigned ServerHello an eternity later.
+	reportTransportEvent(
+		ProxyDiagnosticsPhase::ClientHelloSent,
+		ProxyDiagnosticsSeverity::Warning,
+		u"mtproxy client hello breaks the relay contract: %1 (%2 bytes)"_q
+			.arg(ClientHelloContractIssueSlug(_clientHelloContract))
+			.arg(int(hello.size())));
+}
+
+void TlsSocket::plainDisconnected() {
+	_state = State::NotConnected;
+	_incoming = QByteArray();
+	_responsePrefix = QByteArray();
+	_serverHelloLength = 0;
+	_incomingGoodDataOffset = 0;
+	_incomingGoodDataLimit = 0;
+	_outgoing = QByteArray();
+	_outgoingOffset = 0;
+	_clientPrefixSent = false;
+	_clientHelloTail = QByteArray();
+	_failureReason = MtProxy::FailureReason::None;
+	_connectionError = ProxyConnectionError::None;
+	_syntheticPskOffered = false;
+	_clientHelloContract = ClientHelloContractIssue::None;
+	_clientHelloTimestamp = 0;
+	_clockFromMtproto = false;
+	_clockFromHttp = false;
+	_clockSkew = 0;
+	_clientHelloFragmented = false;
+	_clientHelloBytes = 0;
+	_clientHelloWrites = 0;
+	_clientHelloAcceptedBytes = 0;
+	_clientHelloFragmentSplit = 0;
+	_clientHelloFragmentDelayMs = 0;
+	_rxAfterClientHello = 0;
+	_readNotifications = 0;
+	_tcpConnectedAt = 0;
+	_firstRxAt = 0;
+	_serverHelloAt = 0;
+	_firstAppDataAt = 0;
+	_closeOrigin = ProxyCloseOrigin::None;
+	_firstAppDataReceived = false;
+	_mtprotoPayloadReceived = false;
+	_sentTlsProfile = ProxyTlsProfile::Auto;
+	_phase = HandshakePhase::None;
+	_pacingTimer.cancel();
+	_clientHelloTimer.cancel();
+	_clientHelloFragmentTimer.cancel();
+	_serverHelloTimer.cancel();
+	_serverHelloDeadline = 0;
+	_disconnected.fire({});
+}
+
+void TlsSocket::plainReadyRead() {
+	// Counted before the state switch on purpose: a notification arriving in a
+	// state that reads nothing is exactly the kind of silence being chased.
+	++_readNotifications;
+	switch (_state) {
+	case State::WaitingHello: return readHello();
+	case State::Connected: return readData();
+	}
+}
+
+bool TlsSocket::requiredHelloPartReady() const {
+	return _incoming.size()
+		>= kClientHelloDigestLength + _serverHelloLength;
+}
+
+void TlsSocket::readHello() {
+	const auto parts1Size = kServerHelloPart1.size() + kTlsLengthFieldSize;
+	if (!_serverHelloLength) {
+		_serverHelloLength = parts1Size;
+	}
+	while (!requiredHelloPartReady()) {
+		if (!_transport->bytesAvailable()) {
+			return;
+		}
+		const auto received = _transport->readAll();
+		noteIncoming(received);
+		_incoming.append(received);
+	}
+	checkHelloParts12(parts1Size);
+}
+
+void TlsSocket::checkHelloParts12(int parts1Size) {
+	const auto data = bytes::make_span(_incoming).subspan(
+		kClientHelloDigestLength,
+		parts1Size);
+	const auto part2Size = ReadPartLength(
+		data,
+		parts1Size - kTlsLengthFieldSize);
+	const auto parts123Size = parts1Size
+		+ part2Size
+		+ kServerHelloPart3.size()
+		+ kTlsLengthFieldSize;
+	if (parts123Size > kMaxServerHelloLength) {
+		logError(888, "Bad Server Hello size.");
+		handleError(MtProxy::FailureReason::ProxyProtocolBadResponse);
+		return;
+	}
+	if (_serverHelloLength == parts1Size) {
+		const auto part1Offset = parts1Size
+			- kTlsLengthFieldSize
+			- kServerHelloPart1.size();
+		if (!CheckPart(data.subspan(part1Offset), kServerHelloPart1)) {
+			logError(888, "Bad Server Hello part1.");
+			handleError(IsTlsAlert(data.subspan(part1Offset))
+				? MtProxy::FailureReason::TlsAlertAfterClientHello
+				: MtProxy::FailureReason::ProxyProtocolBadResponse);
+			return;
+		}
+		_serverHelloLength = parts123Size;
+		if (!requiredHelloPartReady()) {
+			readHello();
+			return;
+		}
+	}
+	checkHelloParts34(parts123Size);
+}
+
+void TlsSocket::checkHelloParts34(int parts123Size) {
+	const auto data = bytes::make_span(_incoming).subspan(
+		kClientHelloDigestLength,
+		parts123Size);
+	const auto part4Size = ReadPartLength(
+		data,
+		parts123Size - kTlsLengthFieldSize);
+	const auto full = parts123Size + part4Size;
+	if (full > kMaxServerHelloLength) {
+		logError(888, "Bad Server Hello size.");
+		handleError(MtProxy::FailureReason::ProxyProtocolBadResponse);
+		return;
+	}
+	if (_serverHelloLength == parts123Size) {
+		const auto part3Offset = parts123Size
+			- kTlsLengthFieldSize
+			- kServerHelloPart3.size();
+		if (!CheckPart(data.subspan(part3Offset), kServerHelloPart3)) {
+			logError(888, "Bad Server Hello part.");
+			handleError(
+				MtProxy::FailureReason::ProxyProtocolBadResponse);
+			return;
+		}
+		_serverHelloLength = full;
+		if (!requiredHelloPartReady()) {
+			readHello();
+			return;
+		}
+	}
+	checkHelloDigest();
+}
+
+void TlsSocket::checkHelloDigest() {
+	if (_serverHelloLength
+		< kServerHelloDigestPosition + kClientHelloDigestLength) {
+		logError(888, "Bad Server Hello length.");
+		handleError(MtProxy::FailureReason::ProxyProtocolBadResponse);
+		return;
+	}
+	const auto fulldata = bytes::make_detached_span(_incoming).subspan(
+		0,
+		kClientHelloDigestLength + _serverHelloLength);
+	const auto digest = fulldata.subspan(
+		kClientHelloDigestLength + kServerHelloDigestPosition,
+		kClientHelloDigestLength);
+	const auto digestCopy = bytes::make_vector(digest);
+	bytes::set_with_const(digest, bytes::type(0));
+	const auto check = openssl::HmacSha256(keyFromSecret(), fulldata);
+	if (bytes::compare(digestCopy, check) != 0) {
+		// Two readings end here, and nothing in the answer separates them - the
+		// relay pads its reply to the camouflage domain, so its size measures
+		// that domain and not who wrote it. What does separate them is the
+		// hello we sent: one that breaks the relay's contract could not have
+		// been recognised, whatever secret it carried, so the mismatch is ours
+		// and not the secret's.
+		const auto ours = (_clientHelloContract
+			!= ClientHelloContractIssue::None);
+		logError(888, ours
+			? "Server Hello unsigned - our ClientHello broke the relay "
+				"contract, so it was never read as a client's."
+			: "Server Hello unsigned - the secret is not this relay's.");
+		handleError(ours
+			? MtProxy::FailureReason::ServerHelloForeignTls
+			: MtProxy::FailureReason::ServerHelloHmacMismatch);
+		return;
+	}
+	shiftIncomingBy(fulldata.size());
+	if (!_incoming.isEmpty()) {
+		InvokeQueued(this, [=] {
+			if (!checkNextPacket()) {
+				handleError();
+			}
+		});
+	}
+	_incomingGoodDataOffset = _incomingGoodDataLimit = 0;
+	_serverHelloTimer.cancel();
+	_serverHelloDeadline = 0;
+	_state = State::Connected;
+	_phase = HandshakePhase::ServerHelloOk;
+	_serverHelloAt = crl::now();
+	connectionProgress(_phase);
+	// A verified ServerHello is also a clock measurement: the relay accepted
+	// the time we sent, so it sits inside the window the relay allows. That
+	// closes the "maybe it is our clock" question for this attempt without
+	// any extra request.
+	reportTransportEvent(
+		ProxyDiagnosticsPhase::ServerHelloOk,
+		ProxyDiagnosticsSeverity::Info,
+		u"mtproxy server hello hmac verified, clock validated by relay"_q);
+	if (_startupCover != StartupCover::Off) {
+		_startupCoverStartedAt = crl::now();
+		_startupCoverFrames = 0;
+	}
+	_connected.fire({});
+}
+
+} // namespace MTP::details
