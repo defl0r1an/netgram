@@ -302,10 +302,16 @@ jobs:
           NETGRAM_UPDATE_KEY: ${{ secrets.NETGRAM_UPDATE_KEY }}
         run: |
           key="$(printf '%s\n' "$NETGRAM_UPDATE_KEY" | tr -d '\r')"
-          if ! grep -q -- "-----BEGIN RSA PRIVATE KEY-----" <<<"$key"; then
+          # PKCS#1 (BEGIN RSA PRIVATE KEY) и PKCS#8 (BEGIN PRIVATE KEY) —
+          # оба читает PEM_read_bio_RSAPrivateKey в Packer.
+          if ! grep -q -E -- "-----BEGIN (RSA )?PRIVATE KEY-----" <<<"$key"; then
             echo "NETGRAM_PACKER=" >> "$GITHUB_ENV"
             if [ -n "$NETGRAM_UPDATE_KEY" ]; then
-              echo "::warning::NETGRAM_UPDATE_KEY is set but is not an RSA private key PEM, update packages are not built."
+              # Заголовки PEM не секретны: по ним видно, что вставлено
+              # (например, открытый ключ вместо приватного).
+              headers="$(grep -o -E -- "-----(BEGIN|END) [A-Z0-9 ]+-----" <<<"$key" | tr '\n' ' ')"
+              lines="$(grep -c . <<<"$key" || true)"
+              echo "::warning::NETGRAM_UPDATE_KEY is not a private key PEM (lines: $lines, headers: ${headers:-none}), update packages are not built."
             fi
             echo "Update signing: disabled."
             exit 0
