@@ -61,6 +61,14 @@ jobs:
           run-id: ${{ inputs.run_id }}
           github-token: ${{ github.token }}
 
+      - name: Download release files.
+        uses: actions/download-artifact@v7
+        with:
+          name: netgram-release-${{ steps.source.outputs.sha }}
+          path: release
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
       - name: Package.
         id: package
         env:
@@ -70,12 +78,25 @@ jobs:
           test -f netgram/netgram.exe
           test -f netgram/Updater.exe
           version="${TAG#v}"
+          setup="release/netgram-${version}-win64-setup.exe"
+          test -f "$setup" || { echo "::error::$setup not found: the build has no installer (tag and version.h differ?)"; exit 1; }
+          test -f release/current6 || { echo "::error::current6 not found: the build has no signed update package (NETGRAM_UPDATE_KEY not set?)"; exit 1; }
+          update="$(ls release/tx64upd* | head -n 1)"
+          test -n "$update"
           zip="netgram-${version}-win64-portable.zip"
           (cd netgram && zip -9 -r "../$zip" .)
-          sha256sum "$zip" > "$zip.sha256"
-          cat "$zip.sha256"
-          echo "zip=$zip" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          cp "$setup" .
+          setup="$(basename "$setup")"
+          sha256sum "$zip" "$setup" > "netgram-${version}-SHA256SUMS.txt"
+          cat "netgram-${version}-SHA256SUMS.txt"
+          cat release/current6
+          {
+            echo "zip=$zip"
+            echo "setup=$setup"
+            echo "update=$update"
+            echo "sums=netgram-${version}-SHA256SUMS.txt"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create release.
         env:
@@ -83,6 +104,9 @@ jobs:
           TAG: ${{ inputs.tag }}
           SHA: ${{ steps.source.outputs.sha }}
           ZIP: ${{ steps.package.outputs.zip }}
+          SETUP: ${{ steps.package.outputs.setup }}
+          UPDATE: ${{ steps.package.outputs.update }}
+          SUMS: ${{ steps.package.outputs.sums }}
           VERSION: ${{ steps.package.outputs.version }}
           PRERELEASE: ${{ inputs.prerelease }}
         run: |
@@ -99,4 +123,6 @@ jobs:
           else
             args+=(--latest)
           fi
-          gh release create "$TAG" "$ZIP" "$ZIP.sha256" "${args[@]}"
+          # current6 и tx64upd* читает обновлятор установленных копий
+          # через releases/latest/download/, поэтому релиз — latest.
+          gh release create "$TAG" "$SETUP" "$ZIP" "$SUMS" "$UPDATE" release/current6 "${args[@]}"

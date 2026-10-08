@@ -34,7 +34,11 @@ CloseApplications=force
 DisableDirPage=no
 DisableProgramGroupPage=no
 WizardStyle=modern
+; netgram: signing is optional, pass /dSignSetup together with /Ssha256=...
+; when a code signing certificate is available.
+#ifdef SignSetup
 SignTool=sha256
+#endif
 
 #ifndef MyOutputBaseFilename
   #if MyBuildTarget == "winarm"

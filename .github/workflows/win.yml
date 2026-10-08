@@ -293,6 +293,35 @@ jobs:
             echo "Telegram API: test credentials."
           fi
 
+      # Приватный ключ подписи обновлений (RSA PEM) — из секрета
+      # NETGRAM_UPDATE_KEY. С ним собирается Packer и выпускается
+      # подписанный пакет обновления; без него — только сам клиент.
+      - name: Update signing key.
+        shell: bash
+        env:
+          NETGRAM_UPDATE_KEY: ${{ secrets.NETGRAM_UPDATE_KEY }}
+        run: |
+          key="$(printf '%s\n' "$NETGRAM_UPDATE_KEY" | tr -d '\r')"
+          if ! grep -q -- "-----BEGIN RSA PRIVATE KEY-----" <<<"$key"; then
+            echo "NETGRAM_PACKER=" >> "$GITHUB_ENV"
+            if [ -n "$NETGRAM_UPDATE_KEY" ]; then
+              echo "::warning::NETGRAM_UPDATE_KEY is set but is not an RSA private key PEM, update packages are not built."
+            fi
+            echo "Update signing: disabled."
+            exit 0
+          fi
+          out="$(cygpath -u "$TBUILD")/$REPO_NAME/Telegram/SourceFiles/_other/packer_private.h"
+          {
+            echo 'const char *PrivateKey = '
+            printf '%s\n' "$key" | sed -n '/-----BEGIN/,/-----END/p' \
+              | sed -e 's/^/"/' -e 's/$/\\n"/'
+            echo ';'
+            echo 'const char *PrivateBetaKey = "";'
+            echo 'static const char *AlphaPrivateKey = "";'
+          } > "$out"
+          echo "NETGRAM_PACKER=-D NETGRAM_PACKER=ON" >> "$GITHUB_ENV"
+          echo "Update signing: enabled."
+
       - name: netgram build.
         run: |
           cd %TBUILD%\%REPO_NAME%\Telegram
@@ -301,6 +330,7 @@ jobs:
           -G "Ninja Multi-Config" ^
           qt6 ^
           %NETGRAM_API% ^
+          %NETGRAM_PACKER% ^
           -D CMAKE_CONFIGURATION_TYPES=Release ^
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF ^
@@ -328,4 +358,49 @@ jobs:
         with:
           name: netgram-win64-${{ github.sha }}
           path: artifact\
+          retention-days: 14
+
+      # Файлы релиза: установщик Inno Setup, пакет обновления tx64upd<версия>
+      # (подписан ключом netgram) и current6 — карта версий, которую
+      # обновлятор берет из releases/latest/download/current6.
+      - name: Release files.
+        if: env.NETGRAM_PACKER != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$(cygpath -u "$TBUILD")/$REPO_NAME"
+          version="$(sed -nE 's/^constexpr auto AppVersion = ([0-9]+);.*/\1/p' "$repo/Telegram/SourceFiles/core/version.h")"
+          version_str="$(sed -nE 's/^constexpr auto AppVersionStr = "([^"]+)";.*/\1/p' "$repo/Telegram/SourceFiles/core/version.h")"
+          test -n "$version" && test -n "$version_str"
+          mkdir -p release
+
+          (cd artifact && "$repo/out/Release/Packer.exe" \
+            -version "$version" \
+            -path netgram.exe \
+            -path Updater.exe \
+            -path modules/x64/d3d/d3dcompiler_47.dll \
+            -target win64)
+          mv "artifact/tx64upd$version" release/
+          printf '{"win64":{"stable":{"released":"%s","link":"/tx64upd{version}"}}}\n' "$version" > release/current6
+
+          choco install innosetup -y --no-progress > /dev/null
+          iscc="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
+          # Аргументы /d... — не пути: MSYS не должен их переписывать.
+          MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL="*" "$iscc" \
+            "/dMyAppVersion=$version_str" \
+            "/dMyAppVersionZero=$version_str" \
+            "/dMyAppVersionFull=$version_str" \
+            "/dReleasePath=$(cygpath -w "$PWD/artifact")" \
+            "/dMyBuildTarget=win64" \
+            "/dMyOutputBaseFilename=netgram-$version_str-win64-setup" \
+            "/O$(cygpath -w "$PWD/release")" \
+            "$(cygpath -w "$repo/Telegram/build/setup.iss")"
+          ls -la release
+
+      - uses: actions/upload-artifact@v7
+        name: Upload release files.
+        if: env.NETGRAM_PACKER != ''
+        with:
+          name: netgram-release-${{ github.sha }}
+          path: release/
           retention-days: 14
