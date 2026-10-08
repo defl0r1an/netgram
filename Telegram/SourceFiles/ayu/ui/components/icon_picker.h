@@ -17,6 +17,9 @@ public:
 
 	static constexpr int kColumns = 4;
 
+	// netgram: fires after the user picks another icon.
+	[[nodiscard]] rpl::producer<> iconChanged() const;
+
 protected:
 	void paintEvent(QPaintEvent *e) override;
 	void mousePressEvent(QMouseEvent *e) override;
@@ -28,4 +31,5 @@ private:
 	Ui::Animations::Simple _animation;
 	QString _wasSelected;
 	std::unordered_map<QString, QImage> _cachedIcons;
+	rpl::event_stream<> _iconChanged;
 };

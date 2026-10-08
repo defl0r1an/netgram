@@ -176,5 +176,10 @@ void IconPicker::mousePressEvent(QMouseEvent *e) {
 		applyIcon();
 
 		repaint();
+		_iconChanged.fire({});
 	}
+}
+
+rpl::producer<> IconPicker::iconChanged() const {
+	return _iconChanged.events();
 }

@@ -57,8 +57,15 @@ void BuildAppIcon(SectionBuilder &builder, AyuSectionBuilder &ayu) {
 	});
 
 	builder.add([](const WidgetContext &ctx) -> SectionBuilder::WidgetToAdd {
+		auto picker = object_ptr<IconPicker>(ctx.container);
+		// netgram: the window and tray pick the new icon up at once, but
+		// the taskbar button and pinned shortcuts only after a restart.
+		const auto controller = ctx.controller;
+		picker->iconChanged() | rpl::on_next([=] {
+			ShowRestartPrompt(controller);
+		}, picker->lifetime());
 		return {
-			.widget = object_ptr<IconPicker>(ctx.container),
+			.widget = std::move(picker),
 			.margin = st::settingsButtonNoIcon.padding,
 		};
 	});

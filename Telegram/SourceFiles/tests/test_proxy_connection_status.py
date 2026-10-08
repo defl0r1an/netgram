@@ -254,7 +254,7 @@ def test_proxy_shield_replaces_left_spinner():
     assert "_proxyIcon->moveToLeft(xShift, yShift);" in resize_body
     assert "_proxyIcon->moveToRight(" not in resize_body
     assert "visible && !_currentLayout.proxyEnabled" in visibility_body
-    assert "_proxyIcon->setVisible(_currentLayout.proxyEnabled);" in (
+    assert "_proxyIcon->setVisible(_currentLayout.proxyEnabled || !progressVisible);" in (
         visibility_body)
 
 

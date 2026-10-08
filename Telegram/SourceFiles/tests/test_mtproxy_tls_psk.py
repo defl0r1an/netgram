@@ -273,26 +273,21 @@ def test_manual_tls_profiles_have_independent_transport_cases():
         "MTPTlsClientHello PrepareClientHelloRulesInternal(\n\t\tProxyTlsProfile profile)")
 
     lang = LANG.read_text(encoding="utf-8")
-    # The two automatic modes are translated, the browser names are not.
+    # Every profile label is translated, browser names included (netgram).
     for profile, key, label in (
         ("Auto", "lng_proxy_stealth_tls_auto", "Auto (Chrome)"),
         ("AutoRotate", "lng_proxy_stealth_tls_auto_rotate", "Auto-rotate"),
+        ("ChromeModern", "lng_proxy_stealth_tls_chrome_modern", "Chrome Modern"),
+        ("AndroidChrome", "lng_proxy_stealth_tls_android_chrome", "Android Chrome"),
+        ("Firefox", "lng_proxy_stealth_tls_firefox", "Firefox"),
+        ("FirefoxAndroid", "lng_proxy_stealth_tls_firefox_android", "Firefox Android"),
+        ("Yandex", "lng_proxy_stealth_tls_yandex", "Yandex"),
+        ("AndroidOkHttp", "lng_proxy_stealth_tls_android_okhttp", "Android OkHttp"),
     ):
         assert f"case ProxyTlsProfile::{profile}: {{" in rules_body
         assert f"Profile::{profile}," in box
         assert f"tr::{key}(tr::now));" in box
         assert f'"{key}" = "{label}";' in lang
-
-    for profile, label in (
-        ("ChromeModern", "Chrome Modern"),
-        ("AndroidChrome", "Android Chrome"),
-        ("Firefox", "Firefox"),
-        ("FirefoxAndroid", "Firefox Android"),
-        ("Yandex", "Yandex"),
-        ("AndroidOkHttp", "Android OkHttp"),
-    ):
-        assert f"case ProxyTlsProfile::{profile}: {{" in rules_body
-        assert f'addTls(Profile::{profile}, u"{label}"_q);' in box
 
     assert "case ProxyTlsProfile::Auto:\n\tcase ProxyTlsProfile::AndroidChrome:" not in rules_body
     assert "case ProxyTlsProfile::AndroidChrome:\n\tcase ProxyTlsProfile::AutoRotate:" not in rules_body

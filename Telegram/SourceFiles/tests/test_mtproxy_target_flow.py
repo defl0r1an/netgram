@@ -120,7 +120,7 @@ def test_logs_and_left_proxy_shield_expose_target_flow_state():
     assert "reportTransportEvent(" in tls_handshake
     assert "_proxyIcon->moveToLeft(xShift, yShift);" in window
     assert "const auto progressVisible = visible && !_currentLayout.proxyEnabled;" in window
-    assert "_proxyIcon->setVisible(_currentLayout.proxyEnabled);" in window
+    assert "_proxyIcon->setVisible(_currentLayout.proxyEnabled || !progressVisible);" in window
     assert "_cacheErrorDns" in window
     assert "_cacheErrorTimeout" in window
     assert "_cacheErrorHandshake" in window

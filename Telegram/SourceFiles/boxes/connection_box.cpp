@@ -1527,12 +1527,20 @@ void ProxiesBox::setupContent() {
 		addTls(
 			Profile::AutoRotate,
 			tr::lng_proxy_stealth_tls_auto_rotate(tr::now));
-		addTls(Profile::ChromeModern, u"Chrome Modern"_q);
-		addTls(Profile::AndroidChrome, u"Android Chrome"_q);
-		addTls(Profile::Firefox, u"Firefox"_q);
-		addTls(Profile::FirefoxAndroid, u"Firefox Android"_q);
-		addTls(Profile::Yandex, u"Yandex"_q);
-		addTls(Profile::AndroidOkHttp, u"Android OkHttp"_q);
+		addTls(
+			Profile::ChromeModern,
+			tr::lng_proxy_stealth_tls_chrome_modern(tr::now));
+		addTls(
+			Profile::AndroidChrome,
+			tr::lng_proxy_stealth_tls_android_chrome(tr::now));
+		addTls(Profile::Firefox, tr::lng_proxy_stealth_tls_firefox(tr::now));
+		addTls(
+			Profile::FirefoxAndroid,
+			tr::lng_proxy_stealth_tls_firefox_android(tr::now));
+		addTls(Profile::Yandex, tr::lng_proxy_stealth_tls_yandex(tr::now));
+		addTls(
+			Profile::AndroidOkHttp,
+			tr::lng_proxy_stealth_tls_android_okhttp(tr::now));
 		tlsGroup->setChangedCallback([=](Profile value) {
 			auto o = Core::App().settings().proxyStealthOptions();
 			o.tlsProfile = value;

@@ -856,7 +856,10 @@ void ConnectionState::Widget::setProgressVisibility(bool visible) {
 	if (_progress->isHidden() == progressVisible) {
 		_progress->setVisible(progressVisible);
 	}
-	_proxyIcon->setVisible(_currentLayout.proxyEnabled);
+	// netgram: the shield is always shown, so without a proxy of our own
+	// (system settings or none) the circle stayed empty once connected.
+	// Show the crossed-out shield there instead.
+	_proxyIcon->setVisible(_currentLayout.proxyEnabled || !progressVisible);
 }
 
 void ConnectionState::Widget::refreshRetryLink(bool hasRetry) {

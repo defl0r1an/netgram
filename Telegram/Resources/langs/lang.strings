@@ -1313,6 +1313,12 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_proxy_stealth_tls_profile" = "TLS ClientHello profile";
 "lng_proxy_stealth_tls_auto" = "Auto (Chrome)";
 "lng_proxy_stealth_tls_auto_rotate" = "Auto-rotate";
+"lng_proxy_stealth_tls_chrome_modern" = "Chrome Modern";
+"lng_proxy_stealth_tls_android_chrome" = "Android Chrome";
+"lng_proxy_stealth_tls_firefox" = "Firefox";
+"lng_proxy_stealth_tls_firefox_android" = "Firefox Android";
+"lng_proxy_stealth_tls_yandex" = "Yandex";
+"lng_proxy_stealth_tls_android_okhttp" = "Android OkHttp";
 "lng_proxy_stealth_wss_relay_header" = "Custom WSS relay (expert, any DC)";
 "lng_proxy_stealth_wss_relay_warning" = "No certificate check is done — use only a relay you trust.";
 "lng_proxy_stealth_wss_host" = "WSS relay host (empty = official DC2/DC4)";
