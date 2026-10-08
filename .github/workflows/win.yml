@@ -267,23 +267,40 @@ jobs:
             ${{ env.LibrariesPath }}\cache_keys\[qQ]t[_-]*
           key: ${{ steps.build-libs.outcome == 'success' && steps.cache-qt.outputs.cache-primary-key || format('{0}-partial-{1}-{2}', steps.cache-qt.outputs.cache-primary-key, github.run_id, github.run_attempt) }}
 
-      - name: netgram build.
+      # Ключи разбираются в bash, а не в cmd: перевод строки или пробел,
+      # попавшие в секрет при вставке, ломали разбор if в cmd ("The syntax
+      # of the command is incorrect"). Значения обрезаются, проверяются по
+      # формату и скрываются в логе; при пустых или неверных секретах сборка
+      # идет с тестовыми ключами tdesktop.
+      - name: Telegram API.
+        shell: bash
         env:
           NETGRAM_API_ID: ${{ secrets.TDESKTOP_API_ID }}
           NETGRAM_API_HASH: ${{ secrets.TDESKTOP_API_HASH }}
         run: |
-          cd %TBUILD%\%REPO_NAME%\Telegram
+          id="$(printf '%s' "$NETGRAM_API_ID" | tr -d '[:space:]')"
+          hash="$(printf '%s' "$NETGRAM_API_HASH" | tr -d '[:space:]')"
+          if [ -n "$id" ]; then echo "::add-mask::$id"; fi
+          if [ -n "$hash" ]; then echo "::add-mask::$hash"; fi
+          if [[ "$id" =~ ^[0-9]+$ && "$hash" =~ ^[0-9a-fA-F]{32}$ ]]; then
+            echo "NETGRAM_API=-D TDESKTOP_API_ID=$id -D TDESKTOP_API_HASH=$hash" >> "$GITHUB_ENV"
+            echo "Telegram API: repository secrets."
+          else
+            echo "NETGRAM_API=-D TDESKTOP_API_TEST=ON" >> "$GITHUB_ENV"
+            if [ -n "$id$hash" ]; then
+              echo "::warning::TDESKTOP_API_ID / TDESKTOP_API_HASH are set but malformed, using test credentials."
+            fi
+            echo "Telegram API: test credentials."
+          fi
 
-          set "API=-D TDESKTOP_API_TEST=ON"
-          set "API_SOURCE=test credentials (secrets TDESKTOP_API_ID and TDESKTOP_API_HASH are not set)"
-          if not "%NETGRAM_API_ID%"=="" if not "%NETGRAM_API_HASH%"=="" set "API=-D TDESKTOP_API_ID=%NETGRAM_API_ID% -D TDESKTOP_API_HASH=%NETGRAM_API_HASH%"
-          if not "%NETGRAM_API_ID%"=="" if not "%NETGRAM_API_HASH%"=="" set "API_SOURCE=repository secrets"
-          echo Telegram API: %API_SOURCE%.
+      - name: netgram build.
+        run: |
+          cd %TBUILD%\%REPO_NAME%\Telegram
 
           call configure.bat ^
           -G "Ninja Multi-Config" ^
           qt6 ^
-          %API% ^
+          %NETGRAM_API% ^
           -D CMAKE_CONFIGURATION_TYPES=Release ^
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF ^
