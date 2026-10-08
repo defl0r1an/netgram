@@ -380,11 +380,15 @@ jobs:
           test -n "$version" && test -n "$version_str"
           mkdir -p release
 
+          # d3dcompiler_47.dll кладется в сборку не всегда (в Windows 10+
+          # он системный), поэтому в пакет — только если есть.
+          files=(-path netgram.exe -path Updater.exe)
+          if [ -f artifact/modules/x64/d3d/d3dcompiler_47.dll ]; then
+            files+=(-path modules/x64/d3d/d3dcompiler_47.dll)
+          fi
           (cd artifact && "$repo/out/Release/Packer.exe" \
             -version "$version" \
-            -path netgram.exe \
-            -path Updater.exe \
-            -path modules/x64/d3d/d3dcompiler_47.dll \
+            "${files[@]}" \
             -target win64)
           mv "artifact/tx64upd$version" release/
           printf '{"win64":{"stable":{"released":"%s","link":"/tx64upd{version}"}}}\n' "$version" > release/current6
