@@ -1386,8 +1386,7 @@ void AddRegistrationOrCreationButton(
 		not_null<PeerData*> peer,
 		TextWithLabel &idInfo,
 		const auto &fitLabelToButton) {
-	// netgram: only chats and channels, see getUserRegistrationDate.
-	if (peer->isUser()) {
+	if (peer->isBot() || peer->isServiceUser()) {
 		return;
 	}
 

@@ -63,6 +63,14 @@
 namespace {
 
 constexpr auto usernameResolverBotId = 7424190611L;
+
+// netgram: the owner asked to keep this AyuGram lookup; the bot
+// learns which user id is checked, only when the button is pressed.
+constexpr auto regDateBotId = 8083294286L;
+const auto regDateBotUsername = QString("exteraAuthBot");
+
+constexpr auto regDateBotFallbackId = 6247153446L;
+const auto regDateBotFallbackUsername = QString("ayugrambot");
 const auto usernameResolverBotUsername = QString("tgdb_search_bot");
 const auto usernameResolverEmpty = QString("Error, username or id invalid/not found.");
 
@@ -1273,12 +1281,187 @@ QString filterZalgo(const QString &text) {
 	return output;
 }
 
-void getUserRegistrationDate(not_null<UserData*> user, Fn<void(TextWithEntities)> callback) {
-	// netgram: the registration date of a user was looked up through
-	// third-party inline bots, which would learn who asks about whom.
-	// The lookup is disabled, the profile does not offer it for users.
-	if (callback) {
+void getUserRegistrationDateInner(
+	not_null<UserData*> user,
+	ID botId,
+	Fn<void(TextWithEntities)> callback) {
+	const auto session = &user->session();
+	const auto userId = getBareID(user);
+	const auto userName = user->name();
+	const auto isSelf = user->isSelf();
+
+	const auto bot = session->data().userLoaded(botId);
+	if (!bot) {
 		callback(TextWithEntities{});
+		return;
+	}
+
+	session->api().request(MTPmessages_GetInlineBotResults(
+		MTP_flags(0),
+		bot->inputUser(),
+		MTP_inputPeerEmpty(),
+		MTPInputGeoPoint(),
+		MTP_string(qsl("regdate ") + QString::number(userId)),
+		MTP_string("")
+	)).done([=](const MTPmessages_BotResults &result)
+	{
+		TextWithEntities resultText;
+
+		if (result.type() != mtpc_messages_botResults) {
+			callback(resultText);
+			return;
+		}
+
+		auto &d = result.c_messages_botResults();
+		session->data().processUsers(d.vusers());
+
+		auto &v = d.vresults().v;
+
+		for (const auto &res : v) {
+			const auto message = res.match(
+				[&](const MTPDbotInlineResult &data)
+				{
+					return &data.vsend_message();
+				},
+				[&](const MTPDbotInlineMediaResult &data)
+				{
+					return &data.vsend_message();
+				});
+
+			const auto text = message->match(
+				[&](const MTPDbotInlineMessageMediaAuto &data)
+				{
+					return QString();
+				},
+				[&](const MTPDbotInlineMessageText &data)
+				{
+					return qs(data.vmessage());
+				},
+				[&](const MTPDbotInlineMessageMediaGeo &data)
+				{
+					return QString();
+				},
+				[&](const MTPDbotInlineMessageMediaVenue &data)
+				{
+					return QString();
+				},
+				[&](const MTPDbotInlineMessageMediaContact &data)
+				{
+					return QString();
+				},
+				[&](const MTPDbotInlineMessageMediaInvoice &data)
+				{
+					return QString();
+				},
+				[&](const MTPDbotInlineMessageMediaWebPage &data)
+				{
+					return QString();
+				},
+				[&](const MTPDbotInlineMessageRichMessage &data)
+				{
+					return QString();
+				});
+
+			if (text.isEmpty() || text == "failed") {
+				continue;
+			}
+
+			const auto json = QJsonDocument::fromJson(text.toUtf8());
+			if (!json.isObject()) {
+				continue;
+			}
+
+			const auto obj = json.object();
+			const auto flag = obj["flag"].toString();
+			const auto date = obj["date"].toString();
+
+			const auto parsedDate = QDate::fromString(date, "dd.MM.yyyy");
+			const auto formattedDate = langDayOfMonthFull(parsedDate);
+
+			if (flag == "EXACT" || flag == "INTERPOLATED") {
+				if (!isSelf) {
+					resultText = tr::ayu_CreationDateUserApproximately(
+						tr::now,
+						lt_item1,
+						TextWithEntities{userName},
+						lt_item2,
+						TextWithEntities{formattedDate},
+						tr::rich
+					);
+				} else {
+					resultText = tr::ayu_CreationDateSelfApproximately(
+						tr::now,
+						lt_item,
+						TextWithEntities{formattedDate},
+						tr::rich
+					);
+				}
+			} else if (flag == "LT") {
+				if (!isSelf) {
+					resultText = tr::ayu_CreationDateUserEarlier(
+						tr::now,
+						lt_item1,
+						TextWithEntities{userName},
+						lt_item2,
+						TextWithEntities{formattedDate},
+						tr::rich
+					);
+				} else {
+					resultText = tr::ayu_CreationDateSelfEarlier(
+						tr::now,
+						lt_item,
+						TextWithEntities{formattedDate},
+						tr::rich
+					);
+				}
+			} else if (flag == "ET") {
+				if (!isSelf) {
+					resultText = tr::ayu_CreationDateUserLater(
+						tr::now,
+						lt_item1,
+						TextWithEntities{userName},
+						lt_item2,
+						TextWithEntities{formattedDate},
+						tr::rich
+					);
+				} else {
+					resultText = tr::ayu_CreationDateSelfLater(
+						tr::now,
+						lt_item,
+						TextWithEntities{formattedDate},
+						tr::rich
+					);
+				}
+			}
+			break;
+		}
+
+		callback(resultText);
+	}).fail([=]
+	{
+		callback(TextWithEntities{});
+	}).handleAllErrors().send();
+}
+
+void getUserRegistrationDate(not_null<UserData*> user, Fn<void(TextWithEntities)> callback) {
+	const auto session = &user->session();
+	const auto selfId = getDialogIdFromPeer(session->user());
+	const auto isSupporter = isSupporterPeer(selfId) || isExteraPeer(selfId);
+
+	const auto botId = isSupporter ? regDateBotId : regDateBotFallbackId;
+	const auto botUsername = isSupporter ? regDateBotUsername : regDateBotFallbackUsername;
+
+	if (session->data().userLoaded(botId)) {
+		getUserRegistrationDateInner(user, botId, callback);
+	} else {
+		resolvePeer(
+			QString::number(botId),
+			botUsername,
+			session,
+			[=](const QString &title, PeerData *data)
+			{
+				getUserRegistrationDateInner(user, botId, callback);
+			});
 	}
 }
 

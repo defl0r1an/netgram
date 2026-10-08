@@ -59,6 +59,11 @@ FORBIDDEN = (
     "exteragram.app",
     "t.me/ayusettings",
 )
+# Deliberate exceptions. The owner kept the AyuGram registration date
+# lookup for users: on a button press it asks AyuGram's inline bot.
+ALLOWED = {
+    ("Telegram/SourceFiles/ayu/utils/telegram_helpers.cpp", "ayugrambot"),
+}
 
 
 def source(path: str) -> str:
@@ -96,9 +101,10 @@ def check_forbidden() -> None:
             text = file.read_text(encoding="utf-8").lower()
         except UnicodeDecodeError:
             continue
+        relative = file.relative_to(REPO).as_posix()
         for needle in FORBIDDEN:
-            if needle in text:
-                found.append(f"{file.relative_to(REPO)}: {needle}")
+            if needle in text and (relative, needle) not in ALLOWED:
+                found.append(f"{relative}: {needle}")
     if found:
         raise AssertionError(
             "links of other forks are back:\n" + "\n".join(found))
