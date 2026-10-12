@@ -1,3 +1,11 @@
+7.2.11 (12.10.26)
+
+- Spread WSS tunnel connections over three workers, so media keep loading when one runs out of its daily limit.
+- Bring back the registration date button in user profiles.
+- Show a crossed-out proxy shield instead of an empty circle with system proxy settings.
+- Rewrite the proxy settings labels in plain Russian.
+- Ask to restart after changing the app icon.
+
 7.2.10 (28.09.26)
 
 - Route a data center through Cloudflare fronts and a tunnel when its WSS relay is down.

@@ -22,8 +22,8 @@ constexpr auto AppId = "{AB8971FC-807B-4A9C-B914-53D1B54461E8}"_cs;
 constexpr auto AppNameOld = "netgram for Windows"_cs;
 constexpr auto AppName = "netgram"_cs;
 constexpr auto AppFile = "netgram"_cs;
-constexpr auto AppVersion = 7002010;
-constexpr auto AppVersionStr = "7.2.10";
+constexpr auto AppVersion = 7002011;
+constexpr auto AppVersionStr = "7.2.11";
 // netgram dev releases use NetgramBuildId instead of Telegram's beta bit, so keep
 // AppBetaVersion = false when upstream beta-version commits are merged.
 constexpr auto AppBetaVersion = false;
