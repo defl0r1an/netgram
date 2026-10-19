@@ -332,6 +332,8 @@ jobs:
         run: |
           cd %TBUILD%\%REPO_NAME%\Telegram
 
+          rem Вывод пишется в файлы: при падении шаг «Build errors.» поднимает
+          rem ошибки в аннотации, которые видны без входа в GitHub.
           call configure.bat ^
           -G "Ninja Multi-Config" ^
           qt6 ^
@@ -340,11 +342,41 @@ jobs:
           -D CMAKE_CONFIGURATION_TYPES=Release ^
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF ^
-          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF
-          if errorlevel 1 exit /b 1
+          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF > %TBUILD%\netgram-configure.log 2>&1
+          set RC=%errorlevel%
+          type %TBUILD%\netgram-configure.log
+          if not "%RC%"=="0" exit /b 1
 
-          cmake --build ..\out --config Release --parallel
-          if errorlevel 1 exit /b 1
+          rem -k 0: все ошибки компиляции за один прогон, а не только первая.
+          cmake --build ..\out --config Release --parallel -- -k 0 > %TBUILD%\netgram-build.log 2>&1
+          set RC=%errorlevel%
+          type %TBUILD%\netgram-build.log
+          if not "%RC%"=="0" exit /b 1
+
+      - name: Build errors.
+        if: failure()
+        shell: bash
+        run: |
+          # Логи Actions без входа не открываются, аннотации открываются
+          # (check-runs/<job>/annotations). Каждая аннотация — до 3500
+          # символов, не больше десяти.
+          logs="$(cygpath -u "$TBUILD")"
+          {
+            for f in "$logs/netgram-configure.log" "$logs/netgram-build.log"; do
+              [ -f "$f" ] || continue
+              echo "== $(basename "$f")"
+              grep -a -n -E -A12 'CMake Error' "$f" | head -150
+              grep -a -n -E 'error C[0-9]+|error LNK[0-9]+|fatal error|: error:|FAILED: |ninja: build stopped' "$f" | head -200
+            done
+          } | sed -E 's/(TDESKTOP_API_(ID|HASH)=)[^ "]+/\1***/g' | cut -c1-400 > errors.txt
+          [ -s errors.txt ] || { echo "no error lines found"; exit 0; }
+          split -C 3500 -d errors.txt part_
+          n=0
+          for p in part_*; do
+            n=$((n+1)); [ $n -le 10 ] || break
+            msg=$(sed -e 's/%/%25/g' -e 's/\r//g' "$p" | awk 'BEGIN{ORS="%0A"} {print}')
+            echo "::error title=Build errors $n::$msg"
+          done
 
       - name: Move artifact.
         run: |
