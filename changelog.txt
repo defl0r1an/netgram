@@ -1,3 +1,14 @@
+7.3.1 (19.10.26)
+
+- Update to Telegram Desktop 7.3.1 with the built-in wallet.
+- Fix copy-restricted media reaching Downloads.
+- Fix bad date colors in some custom themes.
+- Use two entry addresses for DC2 and DC4 in WSS.
+- Reach the media data center through Cloudflare domains, not only through the tunnel.
+- Connect to Cloudflare fronts by pinned addresses, with the host name as a fallback.
+- Fix video stickers stuck on a blurred preview.
+- Turn typed <details> into a collapsible block in rich messages.
+
 7.2.11 (12.10.26)
 
 - Spread WSS tunnel connections over three workers, so media keep loading when one runs out of its daily limit.
@@ -16,6 +27,17 @@
 - Remove the pinned promo channel from the chat list.
 - Fix file downloads through the tunnel stalling.
 - Fix clicks on submenu items.
+
+7.2.10 beta (25.09.26)
+
+- Update emoji to Unicode 17.
+- Submit the rich messages editor with Ctrl+Enter.
+- Play audio tracks in a rich message as a playlist.
+- Improve screen reader support for message selection and the unread bar.
+- Fix empty lines lost when converting an article to plain text.
+- Fix shared media and pinned messages in topics and Saved Messages.
+- Fix animated emoji effects autoplaying on already read messages.
+- Fix many crashes.
 
 7.2.9 (16.09.26)
 

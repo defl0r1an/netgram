@@ -108,7 +108,7 @@ enum class OrderedMarkerType {
 }
 
 [[nodiscard]] QString OrderedRomanText(int value, bool upper) {
-	if (value <= 0) {
+	if (!OrderedRomanSupported(value)) {
 		return QString::number(value);
 	}
 	struct RomanPart {
@@ -994,6 +994,11 @@ bool AppendRichText(
 		return AppendRichText(data.vtext(), result, context, anchorId, anchorIds)
 			&& (context->dropRichTextClickHandlers
 				|| AddEntity(&result->text, from, EntityType::BankCard));
+	}, [&](const MTPDtextTonAddress &data) {
+		const auto from = result->text.text.size();
+		return AppendRichText(data.vtext(), result, context, anchorId, anchorIds)
+			&& (context->dropRichTextClickHandlers
+				|| AddEntity(&result->text, from, EntityType::TonAddress));
 	}, [&](const MTPDtextMentionName &data) {
 		const auto from = result->text.text.size();
 		if (!AppendRichText(data.vtext(), result, context, anchorId, anchorIds)) {
@@ -2535,6 +2540,47 @@ std::optional<RichMessageLimitError> ValidateRichMessage(
 	return std::nullopt;
 }
 
+Main::Session *RichBlocksMediaSession(
+		const std::vector<RichPage::Block> &blocks) {
+	for (const auto &block : blocks) {
+		if (block.photo) {
+			return &block.photo->session();
+		} else if (block.document) {
+			return &block.document->session();
+		} else if (block.peer) {
+			return &block.peer->session();
+		}
+		for (const auto &item : block.mediaItems) {
+			if (item.photo) {
+				return &item.photo->session();
+			} else if (item.document) {
+				return &item.document->session();
+			}
+		}
+		for (const auto &article : block.relatedArticles) {
+			if (article.photo) {
+				return &article.photo->session();
+			}
+		}
+		if (const auto session = RichListItemsMediaSession(block.listItems)) {
+			return session;
+		} else if (const auto nested = RichBlocksMediaSession(block.blocks)) {
+			return nested;
+		}
+	}
+	return nullptr;
+}
+
+Main::Session *RichListItemsMediaSession(
+		const std::vector<RichPage::ListItem> &items) {
+	for (const auto &item : items) {
+		if (const auto session = RichBlocksMediaSession(item.blocks)) {
+			return session;
+		}
+	}
+	return nullptr;
+}
+
 int CountRichPageBlocks(const RichPage &page) {
 	auto metrics = RichMessageMetrics();
 	metrics.tableColumnMeasurementLimit = TableColumnMeasurementLimit(0);
@@ -2728,6 +2774,10 @@ bool RichBlockquoteIsCollapsible(const RichPage::Block &block) {
 		&& block.blocks.empty();
 }
 
+bool OrderedRomanSupported(int value) {
+	return (value > 0) && (value <= 9999);
+}
+
 std::optional<TextWithEntities> SerializeAsSimple(
 		const RichPage &page,
 		not_null<Main::Session*> session) {
@@ -2841,6 +2891,107 @@ RichPage SplitTextIntoRichPage(TextWithEntities text) {
 	return page;
 }
 
+// netgram: typed <details><summary>..</summary>..</details> text.
+std::optional<MarkdownDetailsMatch> MatchMarkdownDetails(
+		QStringView text,
+		int from) {
+	const auto size = int(text.size());
+	const auto startsWith = [&](int at, const QString &tag) {
+		return text.mid(at).startsWith(tag, Qt::CaseInsensitive);
+	};
+	const auto isTagEnd = [&](int at) {
+		return (at < size) && (text[at] == '>' || text[at].isSpace());
+	};
+	const auto find = [&](const QString &tag, int start, int till) {
+		for (auto i = start; i + int(tag.size()) <= till; ++i) {
+			if (startsWith(i, tag)) {
+				return i;
+			}
+		}
+		return -1;
+	};
+
+	auto pos = from;
+	while (pos < size && (text[pos] == ' ' || text[pos] == '\t')) {
+		++pos;
+	}
+	if (!startsWith(pos, u"<details"_q) || !isTagEnd(pos + 8)) {
+		return std::nullopt;
+	}
+	auto tagEnd = pos + 8;
+	while (tagEnd < size && text[tagEnd] != '>') {
+		if (text[tagEnd] == '\n') {
+			return std::nullopt;
+		}
+		++tagEnd;
+	}
+	if (tagEnd == size) {
+		return std::nullopt;
+	}
+	const auto attributes = text.mid(pos + 8, tagEnd - pos - 8)
+		.trimmed()
+		.toString()
+		.toLower();
+	const auto open = (attributes == u"open"_q)
+		|| (attributes == u"open=\"\""_q)
+		|| (attributes == u"open=''"_q)
+		|| (attributes == u"open=\"open\""_q)
+		|| (attributes == u"open='open'"_q);
+	if (!attributes.isEmpty() && !open) {
+		return std::nullopt;
+	}
+
+	auto depth = 1;
+	auto closeFrom = -1;
+	for (auto i = tagEnd + 1; i < size; ++i) {
+		if (text[i] != '<') {
+			continue;
+		} else if (startsWith(i, u"</details>"_q)) {
+			if (--depth == 0) {
+				closeFrom = i;
+				break;
+			}
+			i += 9;
+		} else if (startsWith(i, u"<details"_q) && isTagEnd(i + 8)) {
+			++depth;
+			i += 7;
+		}
+	}
+	if (closeFrom < 0) {
+		return std::nullopt;
+	}
+	const auto closeTill = closeFrom + 10;
+	auto end = closeTill;
+	while (end < size && text[end] != '\n') {
+		++end;
+	}
+	if (!text.mid(closeTill, end - closeTill).trimmed().isEmpty()) {
+		return std::nullopt;
+	}
+
+	auto result = MarkdownDetailsMatch{
+		.titleFrom = tagEnd + 1,
+		.titleTill = tagEnd + 1,
+		.bodyFrom = tagEnd + 1,
+		.bodyTill = closeFrom,
+		.end = end,
+		.open = open,
+	};
+	auto inner = tagEnd + 1;
+	while (inner < closeFrom && text[inner].isSpace()) {
+		++inner;
+	}
+	if (startsWith(inner, u"<summary>"_q)) {
+		const auto summaryEnd = find(u"</summary>"_q, inner + 9, closeFrom);
+		if (summaryEnd >= 0) {
+			result.titleFrom = inner + 9;
+			result.titleTill = summaryEnd;
+			result.bodyFrom = summaryEnd + 10;
+		}
+	}
+	return result;
+}
+
 bool TextLooksLikeMarkdownPage(const QString &text) {
 	const auto size = int(text.size());
 	auto lineFrom = 0;
@@ -2848,6 +2999,7 @@ bool TextLooksLikeMarkdownPage(const QString &text) {
 		if (i < size && text[i] != '\n') {
 			continue;
 		}
+		const auto lineStart = lineFrom;
 		const auto line = QStringView(text)
 			.mid(lineFrom, i - lineFrom)
 			.trimmed();
@@ -2855,6 +3007,9 @@ bool TextLooksLikeMarkdownPage(const QString &text) {
 		if (line.isEmpty()) {
 			continue;
 		} else if (line.startsWith(u"```"_q)) {
+			return true;
+		} else if (line.startsWith(u"<details"_q, Qt::CaseInsensitive)
+			&& MatchMarkdownDetails(text, lineStart)) {
 			return true;
 		} else if (line.startsWith(u"-# "_q)
 			&& !line.mid(3).trimmed().isEmpty()) {
@@ -2886,7 +3041,9 @@ bool TextLooksLikeMarkdownPage(const QString &text) {
 	return false;
 }
 
-RichPage ParseMarkdownTextIntoRichPage(TextWithEntities text) {
+RichPage ParseMarkdownTextIntoRichPage(
+		TextWithEntities text,
+		int detailsDepth) {
 	auto page = RichPage();
 	const auto &str = text.text;
 	const auto size = int(str.size());
@@ -2998,6 +3155,32 @@ RichPage ParseMarkdownTextIntoRichPage(TextWithEntities text) {
 			fenceLanguage = trimmed.mid(3).trimmed().toString();
 			fenceContentFrom = fenceContentTill = lineTill + 1;
 			continue;
+		}
+		// netgram: a correctly closed <details> pair is a details block.
+		if (detailsDepth < kMaxMarkdownDetailsDepth
+			&& trimmed.startsWith(u"<details"_q, Qt::CaseInsensitive)) {
+			if (const auto match = MatchMarkdownDetails(str, lineStart)) {
+				flushAll();
+				auto title = blockText(match->titleFrom, match->titleTill);
+				title.text.replace(QChar('\n'), QChar(' '));
+				auto block = Block{
+					.kind = BlockKind::Details,
+					.text = { std::move(title) },
+					.open = match->open,
+				};
+				block.blocks = ParseMarkdownTextIntoRichPage(
+					blockText(match->bodyFrom, match->bodyTill),
+					detailsDepth + 1).blocks;
+				if (block.blocks.empty()) {
+					block.blocks.push_back(Block{
+						.kind = BlockKind::Paragraph,
+					});
+				}
+				page.blocks.push_back(std::move(block));
+				i = match->end;
+				lineFrom = i + 1;
+				continue;
+			}
 		}
 		auto hashes = 0;
 		while (hashes < trimmed.size() && trimmed[hashes] == '#') {

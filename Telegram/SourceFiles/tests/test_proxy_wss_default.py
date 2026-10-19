@@ -21,6 +21,8 @@ SESSION_PRIVATE_CPP = SOURCE_DIR / "mtproto" / "session" / "private" / "session_
 CONNECTION_TCP_CPP = SOURCE_DIR / "mtproto" / "transport" / "connection_tcp.cpp"
 CMAKE_LISTS = SOURCE_DIR.parent / "CMakeLists.txt"
 LANG = SOURCE_DIR.parent / "Resources" / "langs" / "lang.strings"
+SOCKET_FACTORY_CPP = SOURCE_DIR / "mtproto" / "proxy" / "socket_factory.cpp"
+CONNECTION_CPP = SOURCE_DIR / "mtproto" / "session" / "private" / "connection.cpp"
 
 
 def test_wss_transport_is_the_stealth_default():
@@ -280,6 +282,37 @@ def test_wss_remembers_working_relay_host_across_sockets():
     assert "NoteRelayUpgraded(_route, _usedFallback);" in upgrade_body
 
 
+def test_wss_dc2_dc4_have_two_ingress_addresses():
+    source = WSS_SOCKET_CPP.read_text(encoding="utf-8")
+    header = WSS_SOCKET_H.read_text(encoding="utf-8")
+    ingress_body = function_body(
+        source,
+        "[[nodiscard]] const QStringList &OfficialRelayIngresses(int dcId)")
+    official_body = function_body(
+        source,
+        "[[nodiscard]] std::optional<WssRoute> OfficialRoute(int16 protocolDcId)")
+    error_body = function_body(source, "void WssSocket::handleError(")
+    timed_out_body = function_body(source, "void WssSocket::timedOut()")
+    upgrade_body = function_body(source, "bool WssSocket::tryFinishUpgrade()")
+
+    # DNS names 149.154.167.99 for kws2/kws4, every client hardcoded .220;
+    # both carry DC2/DC4 (16.10.2026), so a provider blocking one by IP must
+    # not leave the DC to the resolver.
+    assert 'u"149.154.167.220"_q' in ingress_body
+    assert 'u"149.154.167.99"_q' in ingress_body
+    assert "int relayDcId = 0;" in header
+    assert "bool _addressMoved = false;" in header
+    assert "SelectRelayAddress(metered, positive)" in official_body
+    assert "route.relayDcId = positive;" in official_body
+    # The other ingress comes before the IP <-> DNS flip inside one socket,
+    # and the watchdog path moves new sockets to it as well.
+    assert error_body.index("MoveToNextRelayAddress(_route, _usedFallback)") \
+        < error_body.index("_usedFallback = !_usedFallback;")
+    assert "MoveToNextRelayAddress(_route, _usedFallback).isEmpty()" in timed_out_body
+    # Only an answer through a hardcoded address makes it the preferred one.
+    assert "NoteRelayAddressWorked(_route);" in upgrade_body
+
+
 def test_wss_remote_closed_forbids_wss_for_that_proxy():
     source = CONNECTION_TCP_CPP.read_text(encoding="utf-8")
     error_body = function_body(source, "void TcpConnection::socketError(")
@@ -312,20 +345,73 @@ def function_body(text: str, signature: str) -> str:
     raise AssertionError(f"body not found for {signature}")
 
 
+
+
+def test_wss_dc203_goes_through_fronts_and_tunnel_before_guarded_direct():
+    source = WSS_SOCKET_CPP.read_text(encoding="utf-8")
+    body = function_body(
+        source,
+        "std::optional<WssRoute> WssOfficialRoute(int16 protocolDcId)")
+    no_relay = body[:body.index("if (RouteSuppressed(*route)")]
+    # DC203 has no kws relay, but the fronts carry kws203.<front>: with the
+    # workers out of quota the DC goes to guarded direct TCP, then the fronts.
+    assert "constexpr auto kNoRelayDcId = 203;" in source
+    assert no_relay.index("CdnRoute(kNoRelayDcId)") < no_relay.index("TunnelRoute()") \
+        < no_relay.index("DirectRoute(kNoRelayDcId)") < no_relay.index("return CdnRoute(kNoRelayDcId, true);")
+
+
+def test_wss_direct_tcp_is_a_guarded_step_before_the_front_floor():
+    source = WSS_SOCKET_CPP.read_text(encoding="utf-8")
+    header = WSS_SOCKET_H.read_text(encoding="utf-8")
+    factory = SOCKET_FACTORY_CPP.read_text(encoding="utf-8")
+    connection = CONNECTION_CPP.read_text(encoding="utf-8")
+    body = function_body(
+        source,
+        "std::optional<WssRoute> WssOfficialRoute(int16 protocolDcId)")
+    closed = body[body.index("if (RouteSuppressed(*route)"):]
+    # A DC with a closed relay: fronts, tunnel, direct TCP unless paused, and
+    # only then the fronts whatever their suppression.
+    assert closed.index("CdnRoute(dcId)") < closed.index("TunnelRoute()") \
+        < closed.index("DirectRoute(dcId)") < closed.index("return CdnRoute(dcId, true);")
+    direct = function_body(source, "[[nodiscard]] std::optional<WssRoute> DirectRoute(int dcId)")
+    assert "route.direct = true;" in direct
+    assert "if (RouteSuppressed(route)) {" in direct
+    assert 'u"direct-dc%1"_q' in source
+    # One failure pauses it; 32 KB prove it.
+    note = function_body(source, "void NoteDirectStepClosed(")
+    assert "if (received >= kDirectProofBytes) {" in note
+    assert "SuppressLocked(route, health, now, QString::fromLatin1(failure));" in note
+    assert "consecutiveFailures" not in note
+    # The factory builds a plain TCP socket under the watcher, never a WSS one.
+    assert factory.index("if (route && route->direct) {") \
+        < factory.index("std::make_unique<WssDirectStepSocket>(") \
+        < factory.index("std::make_unique<WssSocket>(")
+    assert "class WssDirectStepSocket final : public AbstractSocket" in header
+    timed_out = function_body(source, "void WssDirectStepSocket::timedOut()")
+    assert '"tcp_timeout"' in timed_out and '"no_answer"' in timed_out and '"stalled"' in timed_out
+    judge = function_body(source, "void WssDirectStepSocket::judge(const char *failure)")
+    # IPv6 siblings fail wherever IPv6 is absent: only IPv4 failures count.
+    assert "(!failure || _ipv6)" in judge
+    # The 1 s first connect wait would pause a slow but working direct path.
+    assert "accumulate_max(wait, kDirectStepMinConnectedTimeout);" in connection
+
+
+
+def test_wss_fronts_are_dialled_by_pinned_address_with_the_name_as_fallback():
+    source = WSS_SOCKET_CPP.read_text(encoding="utf-8")
+    cdn = function_body(source, "[[nodiscard]] std::optional<WssRoute> CdnRoute(")
+    # By name the resolver handed out edges the provider drops (desktop log
+    # 16.10.2026: 102 front TCP connects in 48 000 attempts).
+    assert "kCdnFrontAddresses[slot % kCdnFrontCount][address]" in cdn
+    assert "route.relayHostFallback = route.domain;" in cdn
+    assert "route.relayHost = route.domain;" not in cdn
+    assert '{ "104.21.80.254", "172.67.155.165" }, // virkgj.com' in source
+    assert "every front needs its two addresses" in source
+    advance = function_body(source, "void AdvanceCdn(const WssRoute &route)")
+    assert "CdnAddressRound[route.metered] ^= 1;" in advance
+
 if __name__ == "__main__":
-    test_wss_transport_is_the_stealth_default()
-    test_wss_transport_lives_in_proxy_module()
-    test_wss_keeps_tls_peer_verification_enabled()
-    test_persisted_transport_falls_back_to_wss()
-    test_route_via_wss_toggle_uses_transport_setting()
-    test_local_telegram_proxy_is_not_added_by_default()
-    test_wss_transport_policy_is_the_single_effective_entrypoint()
-    test_wss_policy_allows_only_direct_or_nonlocal_socks_until_forbidden()
-    test_compat_strict_disables_stealth_for_mtproxy_and_local_tunnels()
-    test_persisted_transport_is_raw_and_not_mtproxy_clamped()
-    test_enabling_mtproxy_does_not_rewrite_saved_transport()
-    test_route_via_wss_checkbox_refreshes_after_proxy_change()
-    test_wss_dc_coverage_policy_is_centralized_and_soft()
-    test_wss_direct_fallback_requests_proxy_without_blocking()
-    test_wss_remembers_working_relay_host_across_sockets()
-    test_wss_remote_closed_forbids_wss_for_that_proxy()
+    for name, value in list(globals().items()):
+        if name.startswith("test_") and callable(value):
+            value()
+    print("ok")

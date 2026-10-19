@@ -50,6 +50,7 @@ public:
 			AyuDeleted     = 0x4000,
 			AyuBurnt       = 0x8000,
 			DeletedBySender = 0x10000,
+			FullDate       = 0x20000,
 			//Unread, // We don't want to pass and update it in Date for now.
 		};
 		friend inline constexpr bool is_flag_type(Flag) { return true; };

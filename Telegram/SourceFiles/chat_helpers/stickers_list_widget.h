@@ -106,6 +106,8 @@ public:
 
 	rpl::producer<FileChosen> chosen() const;
 	[[nodiscard]] rpl::producer<> photoRequests() const;
+	[[nodiscard]] rpl::producer<> audioRequests() const;
+	[[nodiscard]] rpl::producer<> linkRequests() const;
 	rpl::producer<> scrollUpdated() const;
 	rpl::producer<TabbedSelector::Action> choosingUpdated() const;
 
@@ -235,11 +237,13 @@ private:
 			return !(*this == other);
 		}
 	};
-	struct OverPhotoButton {
-		inline bool operator==(OverPhotoButton other) const {
-			return true;
+	struct OverMediaButton {
+		int index = 0;
+
+		inline bool operator==(OverMediaButton other) const {
+			return (index == other.index);
 		}
-		inline bool operator!=(OverPhotoButton other) const {
+		inline bool operator!=(OverMediaButton other) const {
 			return !(*this == other);
 		}
 	};
@@ -251,7 +255,7 @@ private:
 		OverSearchShortcut,
 		OverSearchBack,
 		OverGroupAdd,
-		OverPhotoButton>;
+		OverMediaButton>;
 
 	struct SectionInfo {
 		int section = 0;
@@ -322,9 +326,26 @@ private:
 	void readVisibleFeatured(int visibleTop, int visibleBottom);
 
 	void paintStickers(Painter &p, QRect clip);
-	void paintPhotoButton(Painter &p, QRect clip);
-	[[nodiscard]] int photoRowHeight() const;
-	[[nodiscard]] QRect photoButtonRect() const;
+	struct MediaButton {
+		enum class Kind {
+			Photo,
+			Audio,
+			Link,
+		};
+		Kind kind = Kind::Photo;
+		QString text;
+		int textWidth = 0;
+		const style::icon *icon = nullptr;
+		std::unique_ptr<Ui::RippleAnimation> ripple;
+	};
+	[[nodiscard]] static std::vector<MediaButton> MakeMediaButtons(
+		const ComposeFeatures &features,
+		const style::EmojiPan &st);
+	void paintMediaButtons(Painter &p, QRect clip);
+	[[nodiscard]] int mediaButtonsRowHeight() const;
+	[[nodiscard]] int mediaButtonWidth(const MediaButton &button) const;
+	[[nodiscard]] QRect mediaButtonRect(int index) const;
+	[[nodiscard]] int mediaButtonIndexAt(QPoint point) const;
 	void paintMegagroupEmptySet(Painter &p, int y, bool buttonSelected);
 	void paintSticker(
 		Painter &p,
@@ -520,10 +541,8 @@ private:
 	QRect _megagroupSetButtonRect;
 	std::unique_ptr<Ui::RippleAnimation> _megagroupSetButtonRipple;
 
-	Ui::RoundRect _photoButtonBg;
-	QString _photoButtonText;
-	int _photoButtonTextWidth = 0;
-	std::unique_ptr<Ui::RippleAnimation> _photoButtonRipple;
+	Ui::RoundRect _mediaButtonBg;
+	std::vector<MediaButton> _mediaButtons;
 
 	QString _addText;
 	int _addWidth;
@@ -564,6 +583,8 @@ private:
 
 	rpl::event_stream<FileChosen> _chosen;
 	rpl::event_stream<> _photoRequests;
+	rpl::event_stream<> _audioRequests;
+	rpl::event_stream<> _linkRequests;
 	rpl::event_stream<> _scrollUpdated;
 	rpl::event_stream<TabbedSelector::Action> _choosingUpdated;
 
