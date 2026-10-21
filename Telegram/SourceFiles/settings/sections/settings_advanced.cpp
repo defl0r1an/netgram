@@ -32,6 +32,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "info/info_memento.h"
 #include "lang/lang_keys.h"
 #include "main/main_account.h"
+#include "main/main_account_archive.h"
 #include "main/main_domain.h"
 #include "main/main_session.h"
 #include "main/main_session_settings.h"
@@ -68,6 +69,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/window_controller.h"
 #include "window/window_saved_windows.h"
 #include "window/window_session_controller.h"
+#include <QtCore/QDir>
 #include "styles/style_layers.h"
 #include "styles/style_menu_icons.h"
 #include "styles/style_settings.h"
@@ -1034,6 +1036,56 @@ void BuildSpellcheckerSection(SectionBuilder &builder) {
 #endif // !TDESKTOP_DISABLE_SPELLCHECK
 }
 
+void BuildAccountArchiveSection(SectionBuilder &builder) {
+	builder.addDivider();
+	builder.addSkip();
+	builder.addSubsectionTitle({
+		.id = u"advanced/account_archive"_q,
+		.title = tr::lng_netgram_archive_section(),
+		.keywords = { u"archive"_q, u"backup"_q, u"account"_q },
+	});
+
+	const auto controller = builder.controller();
+	const auto session = builder.session();
+	builder.addButton({
+		.id = u"advanced/account_archive_save"_q,
+		.title = tr::lng_netgram_archive_save(),
+		.st = &st::settingsButtonNoIcon,
+		.onClick = [=] {
+			const auto weak = base::make_weak(controller);
+			if (controller) {
+				controller->showToast(tr::lng_netgram_archive_saving(tr::now));
+			}
+			Main::AccountArchive::SaveAsync(
+				session,
+				Main::AccountArchive::Reason::Manual,
+				[=](QString folder) {
+					if (!folder.isEmpty()) {
+						File::ShowInFolder(folder + u"/index.html"_q);
+					} else if (const auto strong = weak.get()) {
+						strong->showToast(
+							tr::lng_netgram_archive_failed(tr::now));
+					}
+				});
+		},
+		.keywords = { u"archive"_q, u"backup"_q, u"deleted"_q, u"frozen"_q },
+	});
+	builder.addButton({
+		.id = u"advanced/account_archive_open"_q,
+		.title = tr::lng_netgram_archive_open(),
+		.st = &st::settingsButtonNoIcon,
+		.onClick = [=] {
+			const auto root = Main::AccountArchive::RootPath();
+			QDir().mkpath(root);
+			File::Launch(root);
+			Main::AccountArchive::MarkSeen();
+		},
+		.keywords = { u"archive"_q, u"backup"_q, u"deleted"_q, u"frozen"_q },
+	});
+	builder.addSkip();
+	builder.addDividerText(tr::lng_netgram_archive_about());
+}
+
 void BuildUpdateSection(SectionBuilder &builder, bool atTop) {
 	if (!HasUpdate()) {
 		return;
@@ -1339,6 +1391,7 @@ const auto kMeta = BuildHelper({
 	BuildSpellcheckerSection(builder);
 	BuildScreenReaderSection(builder);
 	BuildExportSection(builder);
+	BuildAccountArchiveSection(builder);
 });
 
 const SectionBuildMethod kAdvancedSection = kMeta.build;

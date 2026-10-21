@@ -3351,6 +3351,12 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_netgram_preview_message" = "You need to go outside and touch some grass...";
 "lng_netgram_preview_channel_text" = "Better late than never";
 "lng_netgram_links_github" = "Source code and releases";
+"lng_netgram_archive_section" = "Account archive";
+"lng_netgram_archive_save" = "Save an account copy now";
+"lng_netgram_archive_open" = "Open the accounts archive folder";
+"lng_netgram_archive_saving" = "Saving a copy, you can keep this window open.";
+"lng_netgram_archive_failed" = "Not saved: chats are not loaded yet or a copy is already being made.";
+"lng_netgram_archive_about" = "If Telegram deletes, blocks or freezes the account, the app saves to this folder the list of chats, channels and groups with links, the loaded messages and downloaded files before the data is erased. The desktop client keeps no history on disk, so the copy contains only what was already loaded into memory; it is refreshed in the background.";
 "lng_commented" = "commented";
 "lng_approximate" = "appx.";
 "lng_repeated_daily" = "daily";

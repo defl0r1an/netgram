@@ -193,6 +193,12 @@ ayu_* values are based on the upstream Russian translation.
 "lng_netgram_preview_message" = "Тебе нужно выйти на улицу и потрогать траву...";
 "lng_netgram_preview_channel_text" = "Лучше поздно, чем никогда";
 "lng_netgram_links_github" = "Исходный код и релизы";
+"lng_netgram_archive_section" = "Архив аккаунта";
+"lng_netgram_archive_save" = "Сохранить копию аккаунта сейчас";
+"lng_netgram_archive_open" = "Открыть папку архива аккаунтов";
+"lng_netgram_archive_saving" = "Сохраняю копию, окно можно не закрывать.";
+"lng_netgram_archive_failed" = "Не сохранено: чаты ещё не загружены или копия уже делается.";
+"lng_netgram_archive_about" = "Если Telegram удалит, заблокирует или заморозит аккаунт, перед стиранием данных приложение сохраняет в эту папку список чатов, каналов и групп со ссылками, загруженные сообщения и скачанные файлы. ПК-клиент не хранит историю на диске, поэтому копия содержит только то, что уже было загружено в память; она обновляется в фоне.";
 
 // ayu strings
 

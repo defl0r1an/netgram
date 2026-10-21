@@ -24,6 +24,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mainwidget.h"
 #include "api/api_updates.h"
 #include "ui/ui_utility.h"
+#include "main/main_account_archive.h"
 #include "main/main_app_config.h"
 #include "main/main_session.h"
 #include "main/main_domain.h"
@@ -461,7 +462,16 @@ void Account::startMtp(std::unique_ptr<MTP::Config> config) {
 	});
 	_mtp->setGlobalFailHandler([=](const MTP::Error &, const MTP::Response &) {
 		if (const auto session = maybeSession()) {
-			crl::on_main(session, [=] { logOut(); });
+			crl::on_main(session, [=] {
+				// The server dropped the authorization (deleted, banned or
+				// terminated account): copy what is loaded before the wipe.
+				AccountArchive::SetPending(
+					AccountArchive::Save(
+						session,
+						AccountArchive::Reason::ForcedLogout),
+					AccountArchive::Reason::ForcedLogout);
+				logOut();
+			});
 		}
 	});
 	_mtp->setStateChangedHandler([=](MTP::ShiftedDcId dc, int32 state) {
@@ -539,6 +549,11 @@ bool Account::loggingOut() const {
 
 void Account::forcedLogOut() {
 	if (sessionExists()) {
+		AccountArchive::SetPending(
+			AccountArchive::Save(
+				&session(),
+				AccountArchive::Reason::ForcedLogout),
+			AccountArchive::Reason::ForcedLogout);
 		loggedOut();
 		resetAuthorizationKeys();
 	}
@@ -550,6 +565,7 @@ void Account::loggedOut() {
 	destroySession(DestroyReason::LoggedOut);
 	local().reset();
 	cSetOtherOnline(0);
+	AccountArchive::NotifyPending();
 }
 
 void Account::destroyMtpKeys(MTP::AuthKeysList &&keys) {

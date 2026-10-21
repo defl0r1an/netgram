@@ -218,10 +218,18 @@ jobs:
       # последующие этапы: *.pc (configure ffmpeg ищет dav1d, opus и др.
       # через pkg-config) и Makefile (build_ffmpeg_win.sh делает make install
       # в nv-codec-headers). При изменении фильтра сменить CACHE_VERSION.
+      #
+      # Rust-часть отдельная: wallet_engine.cpp — сгенерированный мост,
+      # который CMake читает при configure. Фильтр вычищал его как обычный
+      # исходник, а ключ этапа tdesktop_rust оставался, и следующий прогон
+      # восстанавливал кэш без файла: configure падал на "Cannot find source
+      # file". Поэтому исходники tlottie/wallet-engine и out/src у Rust
+      # сохраняются; версии этих трёх этапов подняты, чтобы разово
+      # пересобрать уже отравленный кэш.
       - name: Free up some disk space.
         if: ${{ !cancelled() && steps.build-libs.outcome != 'skipped' }}
         shell: bash
-        run: find $LibrariesPath '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -name 'Makefile' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -path '*/nv-codec-headers/*' ')' -type f ')' -o -empty ')' -delete
+        run: find $LibrariesPath '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -name 'Makefile' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -path '*/nv-codec-headers/*' -o -path '*/tdesktop_rust/out/src/*' -o -path '*/tlottie/*' -o -path '*/wallet-engine/*' ')' -type f ')' -o -empty ')' -delete
 
       # Кэши сохраняются до сборки самого клиента. После неудачной сборки
       # библиотек - под ключем "-partial-<запуск>": prepare.py пишет ключ
