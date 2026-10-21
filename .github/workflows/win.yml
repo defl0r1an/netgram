@@ -368,16 +368,32 @@ jobs:
           # Логи Actions без входа не открываются, аннотации открываются
           # (check-runs/<job>/annotations). Каждая аннотация — до 3500
           # символов, не больше десяти.
+          #
+          # set -e/pipefail здесь выключаем: grep без совпадений не должен
+          # обрывать шаг до того, как мы соберём остальные ошибки.
+          set +e
+          set +o pipefail
           logs="$(cygpath -u "$TBUILD")"
           {
             for f in "$logs/netgram-configure.log" "$logs/netgram-build.log"; do
               [ -f "$f" ] || continue
               echo "== $(basename "$f")"
-              grep -a -n -E -A12 'CMake Error' "$f" | head -150
-              grep -a -n -E 'error C[0-9]+|error LNK[0-9]+|fatal error|: error:|FAILED: |ninja: build stopped' "$f" | head -200
+              grep -a -n -E -A12 'CMake Error' "$f" | head -150 || true
+              grep -a -n -E 'error C[0-9]+|fatal error|error LNK[0-9]+|LNK[0-9]+|cl : Command line error|D[0-9]{4}|cargo(\.exe)? : error|error\[E[0-9]+\]|: error:|FAILED: |ninja: (build stopped|error)' "$f" | head -300 || true
             done
-          } | sed -E 's/(TDESKTOP_API_(ID|HASH)=)[^ "]+/\1***/g' | cut -c1-400 > errors.txt
-          [ -s errors.txt ] || { echo "no error lines found"; exit 0; }
+          } | sed -E 's/(TDESKTOP_API_(ID|HASH)=)[^ "]+/\1***/g' | cut -c1-500 > errors.txt
+          if [ ! -s errors.txt ]; then
+            # Ни одна известная сигнатура не совпала (например, сломался
+            # configure.bat или ninja не нашёл входной файл) — показываем
+            # хвост лога, там всё равно будет причина.
+            {
+              echo "== no error lines matched; tail of netgram-build.log"
+              tail -n 150 "$logs/netgram-build.log" 2>/dev/null || true
+              echo "== tail of netgram-configure.log"
+              tail -n 80 "$logs/netgram-configure.log" 2>/dev/null || true
+            } | sed -E 's/(TDESKTOP_API_(ID|HASH)=)[^ "]+/\1***/g' | cut -c1-500 > errors.txt
+          fi
+          [ -s errors.txt ] || { echo "::warning title=Build errors::no logs were produced"; exit 0; }
           split -C 3500 -d errors.txt part_
           n=0
           for p in part_*; do
