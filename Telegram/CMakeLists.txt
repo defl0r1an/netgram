@@ -3240,6 +3240,7 @@ endif()
 
 set(netgram_plugins_dir ${src_loc}/netgram/plugins)
 nice_target_sources(Telegram ${src_loc}
+PRIVATE
     netgram/plugins/plugin_config.cpp
     netgram/plugins/plugin_config.h
     netgram/plugins/plugin_manager.cpp
