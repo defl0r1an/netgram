@@ -773,9 +773,9 @@ settingsToastStarIcon: icon {{ "toast/star", toastFg }};
 
 
 // Plugin manager.
-netgramPluginIconPlugins: icon {{ "netgram/plugins/plugins", menuIconColor }}
+netgramPluginIconPlugins: icon {{ "netgram/plugins/plugins", menuIconColor }};
 
-netgramPluginIconOpenCode: icon {{ "netgram/plugins/open_code-24x24", menuIconColor }}
+netgramPluginIconOpenCode: icon {{ "netgram/plugins/open_code-24x24", menuIconColor }};
 
 netgramPluginAboutPadding: margins(34px, 8px, 34px, 6px);
 
@@ -852,9 +852,9 @@ netgramPluginInstallVersion: FlatLabel(defaultFlatLabel) {
 
 netgramPluginInstallVersionPadding: margins(22px, 6px, 22px, 0px);
 
-netgramPluginInstallShield: icon {{ "netgram/plugins/warning-20x20", windowFg }}
+netgramPluginInstallShield: icon {{ "netgram/plugins/warning-20x20", windowFg }};
 
-netgramPluginInstallPuzzle: icon {{ "netgram/plugins/puzzle-20x20", windowFg }}
+netgramPluginInstallPuzzle: icon {{ "netgram/plugins/puzzle-20x20", windowFg }};
 
 netgramPluginInstallPillFont: font(14px semibold);
 
@@ -905,9 +905,9 @@ netgramPluginTopActionSize: 36px;
 
 netgramPluginTopActionsMargin: margins(0px, 14px, 14px, 0px);
 
-netgramPluginTopActionTranslate: icon {{ "menu/translate", windowSubTextFg }}
+netgramPluginTopActionTranslate: icon {{ "menu/translate", windowSubTextFg }};
 
-netgramPluginTopActionCode: icon {{ "netgram/plugins/code", windowSubTextFg }}
+netgramPluginTopActionCode: icon {{ "netgram/plugins/code", windowSubTextFg }};
 
 netgramPluginThreatTile: 44px;
 
@@ -964,33 +964,33 @@ netgramPluginThreatSectionTitle: FlatLabel(defaultFlatLabel) {
 
 netgramPluginThreatSectionPadding: margins(22px, 16px, 22px, 8px);
 
-netgramPluginThreatAlert: icon {{ "netgram/plugins/alert-24x24", windowFg }}
+netgramPluginThreatAlert: icon {{ "netgram/plugins/alert-24x24", windowFg }};
 
-netgramPluginThreatOk: icon {{ "netgram/plugins/shield_ok-24x24", windowFg }}
+netgramPluginThreatOk: icon {{ "netgram/plugins/shield_ok-24x24", windowFg }};
 
-netgramPluginThreatCode: icon {{ "netgram/plugins/code-24x24", windowFg }}
+netgramPluginThreatCode: icon {{ "netgram/plugins/code-24x24", windowFg }};
 
-netgramPluginThreatGlobe: icon {{ "netgram/plugins/globe-24x24", windowFg }}
+netgramPluginThreatGlobe: icon {{ "netgram/plugins/globe-24x24", windowFg }};
 
-netgramPluginThreatFile: icon {{ "netgram/plugins/file-24x24", windowFg }}
+netgramPluginThreatFile: icon {{ "netgram/plugins/file-24x24", windowFg }};
 
-netgramPluginThreatChat: icon {{ "netgram/plugins/chat-24x24", windowFg }}
+netgramPluginThreatChat: icon {{ "netgram/plugins/chat-24x24", windowFg }};
 
-netgramPluginThreatLink: icon {{ "netgram/plugins/link-24x24", windowFg }}
+netgramPluginThreatLink: icon {{ "netgram/plugins/link-24x24", windowFg }};
 
-netgramPluginThreatTune: icon {{ "netgram/plugins/tune-24x24", windowFg }}
+netgramPluginThreatTune: icon {{ "netgram/plugins/tune-24x24", windowFg }};
 
-netgramPluginChipCode: icon {{ "netgram/plugins/code-18x18", windowFg }}
+netgramPluginChipCode: icon {{ "netgram/plugins/code-18x18", windowFg }};
 
-netgramPluginChipGlobe: icon {{ "netgram/plugins/globe-18x18", windowFg }}
+netgramPluginChipGlobe: icon {{ "netgram/plugins/globe-18x18", windowFg }};
 
-netgramPluginChipFile: icon {{ "netgram/plugins/file-18x18", windowFg }}
+netgramPluginChipFile: icon {{ "netgram/plugins/file-18x18", windowFg }};
 
-netgramPluginChipChat: icon {{ "netgram/plugins/chat-18x18", windowFg }}
+netgramPluginChipChat: icon {{ "netgram/plugins/chat-18x18", windowFg }};
 
-netgramPluginChipLink: icon {{ "netgram/plugins/link-18x18", windowFg }}
+netgramPluginChipLink: icon {{ "netgram/plugins/link-18x18", windowFg }};
 
-netgramPluginChipTune: icon {{ "netgram/plugins/tune-18x18", windowFg }}
+netgramPluginChipTune: icon {{ "netgram/plugins/tune-18x18", windowFg }};
 
 netgramPluginPluginCardRadius: 16px;
 

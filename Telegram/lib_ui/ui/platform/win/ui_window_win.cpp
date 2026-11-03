@@ -174,6 +174,13 @@ void SetCustomMargins(not_null<QWindow*> window, QMargins margins) {
 #endif // Qt >= 6.0.0
 }
 
+void FixAeroSnap(HWND handle) {
+	SetWindowLongPtr(
+		handle,
+		GWL_STYLE,
+		GetWindowLongPtr(handle, GWL_STYLE) | WS_CAPTION | WS_THICKFRAME);
+}
+
 [[nodiscard]] Qt::KeyboardModifiers LookupModifiers() {
 	const auto check = [](int key) {
 		return (GetKeyState(key) & 0x8000) != 0;
