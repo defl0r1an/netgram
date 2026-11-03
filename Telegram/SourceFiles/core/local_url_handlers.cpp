@@ -6,6 +6,9 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "core/local_url_handlers.h"
+#include "netgram/plugins/plugin_manager.h"
+#include "netgram/plugins/plugins.h"
+#include "netgram/plugins/plugins_ui.h"
 
 #include "core/deep_links/deep_links_router.h"
 #include "api/api_confirm_phone.h"
@@ -1983,6 +1986,18 @@ const std::vector<LocalUrlHandler> &LocalUrlHandlers() {
 		{
 			u"^chat\\?(.+)(#|$)"_q,
 			AyuUrlHandlers::ResolveChat
+		},
+		{
+			u"^netgramplugins(?:/([^?#]+))?/?$"_q,
+			[](Window::SessionController *controller, const Match &match, const QVariant &) {
+				if (!controller) return false;
+				if (match->captured(1).isEmpty()) {
+					controller->showSettings(::Settings::PluginManager::Id());
+				} else if (Netgram::Plugins::Started()) {
+					Netgram::Plugins::ShowPluginSettings(controller, match->captured(1));
+				}
+				return true;
+			}
 		},
 		{
 			u"^ayusettings/?\\?(.+)(#|$)"_q,

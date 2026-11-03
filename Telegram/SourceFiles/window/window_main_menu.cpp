@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "window/window_main_menu.h"
 
+#include "netgram/plugins/plugins.h"
+
 #include "apiwrap.h"
 #include "base/event_filter.h"
 #include "base/qt_signal_producer.h"
@@ -363,6 +365,9 @@ MainMenu::MainMenu(
 	setupAccounts();
 	setupArchive();
 	setupMenu();
+	Netgram::Plugins::listChanges() | rpl::on_next([=] {
+		setupMenu();
+	}, lifetime());
 
 	const auto shadow = Ui::CreateChild<Ui::PlainShadow>(this);
 	widthValue(
@@ -780,6 +785,15 @@ void MainMenu::setupMenu() {
 		)->setClickedCallback([=] {
 			controller->showPeerHistory(controller->session().user());
 		});
+		for (const auto &type : { u"drawer_menu"_q, u"main_menu"_q }) {
+			for (const auto &entry : Netgram::Plugins::MenuItems(type)) {
+				const auto id = entry.id;
+				addAction(rpl::single(entry.text), { &st::menuIconBotCommands }
+				)->setClickedCallback([=] {
+					Netgram::Plugins::ClickMenuItem(id, {});
+				});
+			}
+		}
 		const auto session = &controller->session();
 		const auto wallet = _menu->add(
 			object_ptr<Ui::SlideWrap<Ui::SettingsButton>>(

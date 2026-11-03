@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_context_menu.h"
 
+#include "netgram/plugins/plugins_ui.h"
+
 #include "api/api_attached_stickers.h"
 #include "api/api_editing.h"
 #include "api/api_global_privacy.h"
@@ -1717,6 +1719,7 @@ void AddMessageActions(
 		not_null<ListWidget*> list) {
 	if (request.item) {
 		const auto context = request.view ? request.view->context() : Context::History;
+		Netgram::Plugins::AddMessageMenuItems(menu, request.item);
 		AyuUi::AddHistoryAction(menu, request.item);
 		AyuUi::AddHideMessageAction(menu, request.item);
 		AyuUi::AddUserMessagesAction(menu, request.item);

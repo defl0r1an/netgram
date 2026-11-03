@@ -9921,3 +9921,157 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "ayu_AboutText1" = "ToS breaking Telegram client based on {api_link}.";
 "ayu_UpdateAyuGram" = "Update netgram";
 "ayu_UtilityRestartRequired" = "The app will close in 5 seconds.";
+
+"lng_netgram_plugins_plugins_bad_file" = "The file is not an netgram plugin.";
+
+"lng_netgram_plugins_plugins_copy_code" = "Copy";
+
+"lng_netgram_plugins_plugins_delete" = "Delete Plugin";
+
+"lng_netgram_plugins_plugins_delete_sure" = "The plugin and its settings will be deleted.";
+
+"lng_netgram_plugins_plugins_empty" = "No plugins installed.";
+
+"lng_netgram_plugins_plugins_install" = "Install";
+
+"lng_netgram_plugins_plugins_install_failed" = "Plugin installed with errors.";
+
+"lng_netgram_plugins_plugins_installed_name" = "{name} installed successfully.";
+
+"lng_netgram_plugins_plugins_no_chat" = "The chat for the plugin message is not loaded.";
+
+"lng_netgram_plugins_plugins_shared" = "Plugin file sent";
+
+"lng_netgram_plugins_plugins_trusted_info" = "Plugins from this source are verified and safe to use.";
+
+"lng_netgram_plugins_plugins_trusted_source" = "Trusted source";
+
+"lng_netgram_plugins_plugins_unknown" = "Unknown Sources";
+
+"lng_netgram_plugins_plugins_unknown_allow" = "Allow";
+
+"lng_netgram_plugins_plugins_unknown_info" = "Plugins from this source are unverified and may pose a security risk.";
+
+"lng_netgram_plugins_plugins_unknown_source" = "Unknown source";
+
+"lng_netgram_plugins_plugins_update" = "Update";
+
+"lng_netgram_plugins_plugins_updated" = "{name} updated successfully.";
+
+"lng_netgram_plugins_plugins_version" = "Version";
+
+"lng_netgram_plugins_safe_mode_auto" = "The app closed unexpectedly while plugins were running, so safe mode was turned on. Plugins stay off until safe mode is disabled in plugin settings.";
+
+"lng_netgram_plugins_safe_mode_open" = "Plugin Settings";
+
+"lng_netgram_plugins_safe_mode_title" = "Safe Mode";
+
+"lng_netgram_plugins_x_description_more" = "Show more";
+
+"lng_netgram_plugins_x_plugin_checking_source" = "Checking the plugin source";
+
+"lng_netgram_plugins_x_plugin_code_copied" = "Plugin code copied";
+
+"lng_netgram_plugins_x_plugin_code_copy" = "Copy";
+
+"lng_netgram_plugins_x_plugin_code_empty" = "The plugin file could not be read.";
+
+"lng_netgram_plugins_x_plugin_danger_text" = "The code of this plugin is encrypted or obfuscated, so its contents cannot be checked. Such a plugin is completely unsafe and cannot be installed. Contact the plugin developer or the netgram developers.";
+
+"lng_netgram_plugins_x_plugin_danger_title" = "Dangerous Plugin";
+
+"lng_netgram_plugins_x_plugin_unknown_blocked" = "This plugin was not found in trusted sources. Installing plugins from unknown sources is turned off in plugin settings.";
+
+"lng_netgram_plugins_x_plugin_view_code" = "View Code";
+
+"lng_netgram_plugins_x_safe_mode_blocked" = "Plugins cannot be enabled while safe mode is on.";
+
+"lng_netgram_plugins_x_safe_mode_hang" = "A plugin stopped responding, so safe mode was turned on. Plugins stay off until safe mode is disabled in plugin settings.";
+
+"lng_netgram_plugins_x_threat_chip_code" = "Code";
+
+"lng_netgram_plugins_x_threat_chip_files" = "Files";
+
+"lng_netgram_plugins_x_threat_chip_links" = "Links";
+
+"lng_netgram_plugins_x_threat_chip_messages" = "Messages";
+
+"lng_netgram_plugins_x_threat_chip_network" = "Network";
+
+"lng_netgram_plugins_x_threat_chip_settings" = "Settings";
+
+"lng_netgram_plugins_x_threat_dex" = "Android code";
+
+"lng_netgram_plugins_x_threat_dex_about" = "Contains code that doesn't run on a computer";
+
+"lng_netgram_plugins_x_threat_files" = "File access";
+
+"lng_netgram_plugins_x_threat_files_about" = "Reads and writes files";
+
+"lng_netgram_plugins_x_threat_hooks" = "App function hooks";
+
+"lng_netgram_plugins_x_threat_hooks_about" = "Changes how the app works from the inside";
+
+"lng_netgram_plugins_x_threat_intents" = "Opening links";
+
+"lng_netgram_plugins_x_threat_intents_about" = "Opens links and other apps";
+
+"lng_netgram_plugins_x_threat_native" = "Native code";
+
+"lng_netgram_plugins_x_threat_native_about" = "Runs native code that can't be checked";
+
+"lng_netgram_plugins_x_threat_network" = "Internet access";
+
+"lng_netgram_plugins_x_threat_network_about" = "Connects to the internet";
+
+"lng_netgram_plugins_x_threat_read" = "Reading messages";
+
+"lng_netgram_plugins_x_threat_read_about" = "Reads your messages and chats";
+
+"lng_netgram_plugins_x_threat_send" = "Sending messages";
+
+"lng_netgram_plugins_x_threat_send_about" = "Sends and edits messages";
+
+"lng_netgram_plugins_x_threat_settings" = "Changing settings";
+
+"lng_netgram_plugins_x_threat_settings_about" = "Changes app settings";
+
+"lng_netgram_plugins_x_threats_attention" = "Needs attention";
+
+"lng_netgram_plugins_x_threats_attention_amount" = "Need attention: {amount}";
+
+"lng_netgram_plugins_x_threats_dangerous_amount" = "Dangerous: {amount}";
+
+"lng_netgram_plugins_x_threats_found" = "Threats found";
+
+"lng_netgram_plugins_x_threats_more" = "More places: {amount}";
+
+"lng_netgram_plugins_x_threats_none" = "No threats found";
+
+"lng_netgram_plugins_x_threats_nothing" = "The plugin uses no special permissions";
+
+"lng_netgram_plugins_x_threats_other_amount" = "Permissions: {amount}";
+
+"lng_netgram_plugins_x_threats_section_attention" = "Needs attention";
+
+"lng_netgram_plugins_x_threats_section_danger" = "Dangerous";
+
+"lng_netgram_plugins_x_threats_section_other" = "Other";
+
+"lng_netgram_plugins_x_unknown_allow_wait" = "Allow ({seconds})";
+
+"lng_netgram_plugins_x_unknown_warning" = "Download plugins only from official sources. Always check the code of a plugin before installing it, for example by sending its file to any AI model for review. If part of the code is encrypted or unreadable, do not use the plugin.\n\nA plugin has full access to your account and device. A malicious plugin can steal your data, sessions and cookies or take over your account.";
+
+"lng_netgram_plugins_manager_title" = "Plugins";
+
+"lng_netgram_plugins_manager_enabled" = "Enable plugin engine";
+
+"lng_netgram_plugins_manager_safe" = "Safe mode: disable all plugins";
+
+"lng_netgram_plugins_manager_unknown" = "Allow installation from files";
+
+"lng_netgram_plugins_manager_install" = "Install plugin from file";
+
+"lng_netgram_plugins_manager_export" = "Export installed plugins";
+
+"lng_netgram_plugins_manager_not_running" = "Enable the plugin engine and restart the app.";

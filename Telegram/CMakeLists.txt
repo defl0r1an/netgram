@@ -3236,3 +3236,39 @@ if (LINUX AND DESKTOP_APP_USE_PACKAGED)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/io.github.defl0r1an.netgram.service" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/dbus-1/services")
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/io.github.defl0r1an.netgram.metainfo.xml" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/metainfo")
 endif()
+
+
+set(netgram_plugins_dir ${src_loc}/netgram/plugins)
+nice_target_sources(Telegram ${src_loc}
+    netgram/plugins/plugin_config.cpp
+    netgram/plugins/plugin_config.h
+    netgram/plugins/plugin_manager.cpp
+    netgram/plugins/plugin_manager.h
+    netgram/plugins/plugin_trust.cpp
+    netgram/plugins/plugin_trust.h
+    netgram/plugins/plugin_views.cpp
+    netgram/plugins/plugin_views.h
+    netgram/plugins/plugins.cpp
+    netgram/plugins/plugins.h
+    netgram/plugins/plugins_ui.cpp
+    netgram/plugins/plugins_ui.h
+)
+if (WIN32)
+    set(NETGRAM_PYTHON_ROOT "" CACHE PATH "Python runtime with include and libs")
+    if (NOT EXISTS "${NETGRAM_PYTHON_ROOT}/include/Python.h")
+        message(FATAL_ERROR "NETGRAM_PYTHON_ROOT must contain Python 3.11 headers and libraries")
+    endif()
+    target_include_directories(Telegram PRIVATE ${NETGRAM_PYTHON_ROOT}/include)
+    target_link_libraries(Telegram PRIVATE ${NETGRAM_PYTHON_ROOT}/libs/python311.lib)
+    target_link_options(Telegram PRIVATE /DELAYLOAD:python311.dll)
+    add_custom_command(TARGET Telegram POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${NETGRAM_PYTHON_ROOT} $<TARGET_FILE_DIR:Telegram>/python)
+else()
+    find_package(Python3 3.11 COMPONENTS Development REQUIRED)
+    target_include_directories(Telegram PRIVATE ${Python3_INCLUDE_DIRS})
+    target_link_libraries(Telegram PRIVATE ${Python3_LIBRARIES})
+endif()
+add_custom_command(TARGET Telegram POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${netgram_plugins_dir}/python $<TARGET_FILE_DIR:Telegram>/python/netgram)

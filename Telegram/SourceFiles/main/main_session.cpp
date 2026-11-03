@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "main/main_session.h"
 
+#include "netgram/plugins/plugins.h"
+
 #include "e2e_cloud/desktop/desktop_service.h"
 
 #include "api/api_bot.h"
@@ -238,6 +240,9 @@ Session::Session(
 	data().restoreLocalState();
 
 	_api->requestTermsUpdate();
+	_data->newItemAdded() | rpl::on_next([](not_null<HistoryItem*> item) {
+		Netgram::Plugins::NotifyNewMessage(item);
+	}, lifetime());
 	_api->requestFullPeer(_user);
 
 	_api->instance().setUserPhone(_user->phone());

@@ -6,6 +6,10 @@
 // Copyright @Radolyn, 2026
 #include "ayu/ui/boxes/plugin_info_box.h"
 
+#include "netgram/plugins/plugins_ui.h"
+
+#include "netgram/plugins/plugins.h"
+
 #include "apiwrap.h"
 #include "ayu/ayu_url_handlers.h"
 #include "core/file_utilities.h"
@@ -418,7 +422,7 @@ void FillPluginInfoBox(
 	box->verticalLayout()->add(
 		object_ptr<Ui::FlatLabel>(
 			box->verticalLayout(),
-			tr::ayu_PluginsNotAvailable(),
+			tr::lng_netgram_plugins_manager_not_running(),
 			st::boxDividerLabel),
 		st::boxRowPadding);
 
@@ -484,6 +488,11 @@ void ShowPluginInfoBox(
 	not_null<Window::SessionController*> controller,
 	const QString &pluginPath,
 	PluginMetadata metadata) {
+	if (Netgram::Plugins::Started()) {
+		Netgram::Plugins::ShowInstallBox(controller, pluginPath, false);
+		return;
+	}
+
 	const auto showBox = [controller, pluginPath](
 		PluginMetadata md,
 		DocumentData *stickerDoc)

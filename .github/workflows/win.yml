@@ -336,6 +336,18 @@ jobs:
           echo "NETGRAM_PACKER=-D NETGRAM_PACKER=ON" >> "$GITHUB_ENV"
           echo "Update signing: enabled."
 
+      - name: Plugin Python runtime.
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          nuget install python -Version 3.11.9 -OutputDirectory "$env:TBUILD\PluginPython" -NonInteractive -Source https://api.nuget.org/v3/index.json
+          if ($LASTEXITCODE -ne 0) { throw 'Python runtime download failed' }
+          $runtime = "$env:TBUILD\PluginPython\python.3.11.9\tools"
+          foreach ($file in @('include\Python.h', 'libs\python311.lib', 'python311.dll', 'Lib\encodings\__init__.py')) {
+            if (!(Test-Path -LiteralPath "$runtime\$file")) { throw "Python runtime is incomplete: $file" }
+          }
+          "NETGRAM_PYTHON_ROOT=$runtime" >> $env:GITHUB_ENV
+
       - name: netgram build.
         run: |
           cd %TBUILD%\%REPO_NAME%\Telegram
@@ -347,6 +359,7 @@ jobs:
           qt6 ^
           %NETGRAM_API% ^
           %NETGRAM_PACKER% ^
+          -D NETGRAM_PYTHON_ROOT="%NETGRAM_PYTHON_ROOT%" ^
           -D CMAKE_CONFIGURATION_TYPES=Release ^
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF ^
@@ -410,6 +423,8 @@ jobs:
           if errorlevel 1 exit /b 1
           move %OUT%\Updater.exe artifact\
           if errorlevel 1 exit /b 1
+          xcopy /E /I /Y %OUT%\python artifact\python\
+          if errorlevel 1 exit /b 1
           if exist %OUT%\modules\x64\d3d\d3dcompiler_47.dll (
             mkdir artifact\modules\x64\d3d
             copy %OUT%\modules\x64\d3d\d3dcompiler_47.dll artifact\modules\x64\d3d\
@@ -438,7 +453,7 @@ jobs:
 
           # d3dcompiler_47.dll кладется в сборку не всегда (в Windows 10+
           # он системный), поэтому в пакет — только если есть.
-          files=(-path netgram.exe -path Updater.exe)
+          files=(-path netgram.exe -path Updater.exe -path python)
           if [ -f artifact/modules/x64/d3d/d3dcompiler_47.dll ]; then
             files+=(-path modules/x64/d3d/d3dcompiler_47.dll)
           fi

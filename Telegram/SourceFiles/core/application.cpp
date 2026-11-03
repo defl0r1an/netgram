@@ -7,6 +7,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "core/application.h"
 
+#include "netgram/plugins/plugin_config.h"
+
+#include "netgram/plugins/plugins.h"
+
 #include "data/data_abstract_structure.h"
 #include "data/data_channel.h"
 #include "data/data_forum.h"
@@ -268,6 +272,8 @@ void Application::closeAdditionalWindows() {
 }
 
 Application::~Application() {
+	Netgram::Plugins::Shutdown();
+	Netgram::Config::Instance().saveNow();
 	if (_savedWindows) {
 		_savedWindows->writeNow();
 	}
@@ -359,6 +365,7 @@ void Application::run() {
 	QCoreApplication::instance()->installTranslator(_translator.get());
 
 	AyuInfra::init();
+	Netgram::Config::Instance().setWorkingDir(cWorkingDir());
 	style::StartManager(cScale());
 	Ui::Accessible::Init();
 	Ui::InitTextOptions();
@@ -498,6 +505,7 @@ void Application::run() {
 	processCreatedWindow(_lastActivePrimaryWindow);
 
 	_savedWindows->startRestore();
+	Netgram::Plugins::Start();
 
 	Test::Fire(u"launch_finished"_q);
 	Test::Start();

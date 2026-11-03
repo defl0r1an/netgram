@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "apiwrap.h"
 
+#include "netgram/plugins/plugins.h"
+
 #include "api/api_authorizations.h"
 #include "api/api_attached_stickers.h"
 #include "api/api_blocked_peers.h"
@@ -4833,6 +4835,18 @@ void ApiWrap::sendRichMessage(
 void ApiWrap::sendMessage(
 		MessageToSend &&message,
 		std::optional<MsgId> localMessageId) {
+	if (!Netgram::Plugins::Bypassing()) {
+		const auto result = Netgram::Plugins::OnSendMessage(
+			message.action.history,
+			message.textWithTags.text,
+			message.action.replyTo.messageId.msg);
+		if (result.strategy == Netgram::Plugins::SendStrategy::Cancel) {
+			return;
+		} else if (result.strategy == Netgram::Plugins::SendStrategy::Modify) {
+			message.textWithTags.text = result.text;
+			message.textWithTags.tags = TextUtilities::ConvertEntitiesToTextTags(result.entities);
+		}
+	}
 	applyGhostScheduling(message.action, message.textWithTags.text);
 	const auto clearReplyTo = prependPseudoReply(message);
 

@@ -6,6 +6,8 @@
 // Copyright @Radolyn, 2026
 #include "ayu/ui/settings/settings_main.h"
 
+#include "netgram/plugins/plugin_manager.h"
+
 #include "settings/sections/settings_main.h"
 #include "lang_auto.h"
 #include "ayu/ayu_settings.h"
@@ -98,6 +100,11 @@ void BuildCategories(SectionBuilder &builder) {
 	builder.addSkip();
 
 	builder.addSubsectionTitle(tr::ayu_CategoriesHeader());
+	builder.addSectionButton({
+		.title = tr::lng_netgram_plugins_manager_title(),
+		.targetSection = PluginManager::Id(),
+		.icon = { &st::menuIconBotCommands },
+	});
 
 	builder.addSectionButton({
 		.title = rpl::single(QString("netgram")),

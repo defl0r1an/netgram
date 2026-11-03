@@ -628,3 +628,157 @@ ayu_* values are based on the upstream Russian translation.
 "ayu_AboutText1" = "Клиент Telegram с запрещённым функционалом на основе {api_link}.";
 "ayu_UpdateAyuGram" = "Обновить netgram";
 "ayu_UtilityRestartRequired" = "Приложение закроется через 5 секунд.";
+
+"lng_netgram_plugins_plugins_bad_file" = "Файл не является плагином netgram.";
+
+"lng_netgram_plugins_plugins_copy_code" = "Копировать";
+
+"lng_netgram_plugins_plugins_delete" = "Удалить плагин";
+
+"lng_netgram_plugins_plugins_delete_sure" = "Плагин и его настройки будут удалены.";
+
+"lng_netgram_plugins_plugins_empty" = "Плагины не установлены.";
+
+"lng_netgram_plugins_plugins_install" = "Установить";
+
+"lng_netgram_plugins_plugins_install_failed" = "Плагин установлен с ошибками.";
+
+"lng_netgram_plugins_plugins_installed_name" = "{name} установлен.";
+
+"lng_netgram_plugins_plugins_no_chat" = "Чат для сообщения плагина не загружен.";
+
+"lng_netgram_plugins_plugins_shared" = "Файл плагина отправлен";
+
+"lng_netgram_plugins_plugins_trusted_info" = "Плагины из этого источника проверены и безопасны.";
+
+"lng_netgram_plugins_plugins_trusted_source" = "Проверенный источник";
+
+"lng_netgram_plugins_plugins_unknown" = "Неизвестные источники";
+
+"lng_netgram_plugins_plugins_unknown_allow" = "Разрешить";
+
+"lng_netgram_plugins_plugins_unknown_info" = "Плагины из этого источника не проверены и могут быть небезопасны.";
+
+"lng_netgram_plugins_plugins_unknown_source" = "Неизвестный источник";
+
+"lng_netgram_plugins_plugins_update" = "Обновить";
+
+"lng_netgram_plugins_plugins_updated" = "{name} обновлён.";
+
+"lng_netgram_plugins_plugins_version" = "Версия";
+
+"lng_netgram_plugins_safe_mode_auto" = "Приложение неожиданно закрылось во время работы плагинов, поэтому включён безопасный режим. Плагины не запускаются, пока безопасный режим не отключён в настройках плагинов.";
+
+"lng_netgram_plugins_safe_mode_open" = "Настройки плагинов";
+
+"lng_netgram_plugins_safe_mode_title" = "Безопасный режим";
+
+"lng_netgram_plugins_x_description_more" = "Показать полностью";
+
+"lng_netgram_plugins_x_plugin_checking_source" = "Проверка источника плагина";
+
+"lng_netgram_plugins_x_plugin_code_copied" = "Код плагина скопирован";
+
+"lng_netgram_plugins_x_plugin_code_copy" = "Копировать";
+
+"lng_netgram_plugins_x_plugin_code_empty" = "Не удалось прочитать файл плагина.";
+
+"lng_netgram_plugins_x_plugin_danger_text" = "Код этого плагина зашифрован или запутан, поэтому проверить его содержимое невозможно. Такой плагин полностью опасен, установка заблокирована. Обратитесь к разработчику плагина или к разработчикам netgram.";
+
+"lng_netgram_plugins_x_plugin_danger_title" = "Опасный плагин";
+
+"lng_netgram_plugins_x_plugin_unknown_blocked" = "Этот плагин не найден в доверенных источниках. Установка плагинов из неизвестных источников выключена в настройках плагинов.";
+
+"lng_netgram_plugins_x_plugin_view_code" = "Посмотреть код";
+
+"lng_netgram_plugins_x_safe_mode_blocked" = "Плагины нельзя включить, пока включён безопасный режим.";
+
+"lng_netgram_plugins_x_safe_mode_hang" = "Плагин перестал отвечать, поэтому включён безопасный режим. Плагины не работают, пока безопасный режим не отключён в настройках плагинов.";
+
+"lng_netgram_plugins_x_threat_chip_code" = "Код";
+
+"lng_netgram_plugins_x_threat_chip_files" = "Файлы";
+
+"lng_netgram_plugins_x_threat_chip_links" = "Ссылки";
+
+"lng_netgram_plugins_x_threat_chip_messages" = "Сообщения";
+
+"lng_netgram_plugins_x_threat_chip_network" = "Сеть";
+
+"lng_netgram_plugins_x_threat_chip_settings" = "Настройки";
+
+"lng_netgram_plugins_x_threat_dex" = "Код Android";
+
+"lng_netgram_plugins_x_threat_dex_about" = "Содержит код, который на компьютере не выполняется";
+
+"lng_netgram_plugins_x_threat_files" = "Доступ к файлам";
+
+"lng_netgram_plugins_x_threat_files_about" = "Читает и записывает файлы";
+
+"lng_netgram_plugins_x_threat_hooks" = "Перехват функций";
+
+"lng_netgram_plugins_x_threat_hooks_about" = "Изменяет работу приложения изнутри";
+
+"lng_netgram_plugins_x_threat_intents" = "Открытие ссылок";
+
+"lng_netgram_plugins_x_threat_intents_about" = "Открывает ссылки и другие приложения";
+
+"lng_netgram_plugins_x_threat_native" = "Нативный код";
+
+"lng_netgram_plugins_x_threat_native_about" = "Запускает код, который нельзя проверить";
+
+"lng_netgram_plugins_x_threat_network" = "Доступ в интернет";
+
+"lng_netgram_plugins_x_threat_network_about" = "Подключается к интернету";
+
+"lng_netgram_plugins_x_threat_read" = "Чтение сообщений";
+
+"lng_netgram_plugins_x_threat_read_about" = "Читает сообщения и чаты";
+
+"lng_netgram_plugins_x_threat_send" = "Отправка сообщений";
+
+"lng_netgram_plugins_x_threat_send_about" = "Отправляет и изменяет сообщения";
+
+"lng_netgram_plugins_x_threat_settings" = "Изменение настроек";
+
+"lng_netgram_plugins_x_threat_settings_about" = "Меняет настройки приложения";
+
+"lng_netgram_plugins_x_threats_attention" = "Требует внимания";
+
+"lng_netgram_plugins_x_threats_attention_amount" = "Требуют внимания: {amount}";
+
+"lng_netgram_plugins_x_threats_dangerous_amount" = "Опасных: {amount}";
+
+"lng_netgram_plugins_x_threats_found" = "Найдены угрозы";
+
+"lng_netgram_plugins_x_threats_more" = "Ещё мест: {amount}";
+
+"lng_netgram_plugins_x_threats_none" = "Угроз не найдено";
+
+"lng_netgram_plugins_x_threats_nothing" = "Плагин не использует особые возможности";
+
+"lng_netgram_plugins_x_threats_other_amount" = "Разрешений: {amount}";
+
+"lng_netgram_plugins_x_threats_section_attention" = "Требуют внимания";
+
+"lng_netgram_plugins_x_threats_section_danger" = "Опасные";
+
+"lng_netgram_plugins_x_threats_section_other" = "Прочее";
+
+"lng_netgram_plugins_x_unknown_allow_wait" = "Разрешить ({seconds})";
+
+"lng_netgram_plugins_x_unknown_warning" = "Скачивайте плагины только из официальных источников. Всегда проверяйте код плагина перед установкой, например отправьте его файл любой нейросети на проверку. Если часть кода зашифрована или нечитаема, не используйте такой плагин.\n\nПлагин получает полный доступ к аккаунту и устройству. Вредоносный плагин может украсть ваши данные, сессии и cookie или захватить аккаунт.";
+
+"lng_netgram_plugins_manager_title" = "Плагины";
+
+"lng_netgram_plugins_manager_enabled" = "Включить движок плагинов";
+
+"lng_netgram_plugins_manager_safe" = "Безопасный режим: отключить все плагины";
+
+"lng_netgram_plugins_manager_unknown" = "Разрешить установку из файлов";
+
+"lng_netgram_plugins_manager_install" = "Установить плагин из файла";
+
+"lng_netgram_plugins_manager_export" = "Экспортировать установленные плагины";
+
+"lng_netgram_plugins_manager_not_running" = "Включите движок плагинов и перезапустите приложение.";
