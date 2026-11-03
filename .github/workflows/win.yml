@@ -212,6 +212,8 @@ jobs:
         id: build-libs
         timeout-minutes: 300
         run: |
+          python %TBUILD%\%REPO_NAME%\Telegram\SourceFiles\tests\test_prepare_windows_batch.py
+          if errorlevel 1 exit /b 1
           %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat skip-debug silent qt6
 
       # Оставляет только результаты сборки и то немногое, что читают

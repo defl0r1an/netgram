@@ -374,18 +374,34 @@ def winFailOnEach(command):
     commands = command.split('\n')
     result = ''
     startingCommand = True
+    blockDepth = 0
     for command in commands:
         command = re.sub(r'\$([A-Za-z0-9_]+)', r'%\1%', command)
         if re.search(r'\$[^<]', command):
             error('Bad command: ' + command)
-        appendCall = startingCommand and not re.match(r'(if|for) ', command)
+        # Keep compound commands intact. Their explicit IF ERRORLEVEL
+        # branches handle failures without CALL reparsing their parentheses.
+        inBlock = blockDepth > 0
+        if command == ')':
+            blockDepth -= 1
+        elif re.match(r'(if|for) .*\($', command):
+            blockDepth += 1
+        appendCall = (startingCommand
+            and not inBlock and blockDepth == 0
+            and command != ')'
+            and not re.match(r'(if|for|exit) ', command))
         called = 'call ' + command if appendCall else command
         result = result + called
         if command.endswith('^'):
             startingCommand = False
         else:
             startingCommand = True
-            result = result + '\r\nif %errorlevel% neq 0 exit /b %errorlevel%\r\n'
+            if blockDepth > 0:
+                result += '\r\n'
+                continue
+            # Percent expansion inside (...) reads the status before the
+            # block runs. IF ERRORLEVEL checks the command that just ran.
+            result = result + '\r\nif errorlevel 1 exit /b 1\r\n'
     return result
 
 def printCommands(commands):
@@ -1810,6 +1826,7 @@ win:
             exit /b 1
         )
     )
+    cd ..\\qtbase
     for %%i in ("%REPO_DIR%\\Telegram\\build\\patches_extra\\qtbase_%QT%\\*.patch") do (
         git apply "%%~fi" -v
         if errorlevel 1 (
@@ -1892,6 +1909,8 @@ debug:
 release:
     cmake --build .
     cmake --install .
+win:
+    if not exist "%LIBS_DIR%\\Qt-%QT%\\lib\\cmake\\Qt6\\Qt6Config.cmake" exit /b 1
 """)
 
 stage('tg_owt', """
