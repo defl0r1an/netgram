@@ -156,9 +156,9 @@ void ThanosEffectRenderer::initialize(
 		disable(u"compute shaders not supported"_q);
 		return;
 	} else if (!rhi->isTextureFormatSupported(
-			QRhiTexture::RGBA32F,
+			QRhiTexture::R32F,
 			QRhiTexture::UsedWithLoadStore)) {
-		disable(u"RGBA32F image load/store not supported"_q);
+		disable(u"R32F image load/store not supported"_q);
 		return;
 	}
 
@@ -188,7 +188,7 @@ void ThanosEffectRenderer::initialize(
 			QRhiSampler::ClampToEdge,
 			QRhiSampler::ClampToEdge))
 		|| !CreateResource(_placeholderStateTexture, rhi->newTexture(
-			QRhiTexture::RGBA32F,
+			QRhiTexture::R32F,
 			QSize(1, 1),
 			1,
 			QRhiTexture::UsedWithLoadStore))
