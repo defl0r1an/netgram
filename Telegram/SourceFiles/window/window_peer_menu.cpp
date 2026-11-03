@@ -1951,7 +1951,11 @@ void Filler::fillHistoryActions() {
 	addCreateTopic();
 	addInfo();
 	AyuUi::AddJumpToBeginningAction(_peer, _thread, _controller, _addAction);
-	Netgram::Plugins::AddChatMenuItems(_addAction, _peer);
+	Netgram::Plugins::AddChatMenuItems(
+		[add = _addAction](QString text, Fn<void()> callback) {
+			add(std::move(text), std::move(callback));
+		},
+		_peer);
 	AyuUi::AddOpenChannelAction(_peer, _controller, _addAction);
 	addViewAsTopics();
 	addManageChat();
