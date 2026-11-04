@@ -350,6 +350,15 @@ jobs:
           }
           "NETGRAM_PYTHON_ROOT=$runtime" >> $env:GITHUB_ENV
 
+      # Статическая линковка клиента требует больше памяти, чем доступно
+      # на стандартном Windows runner без дополнительной подкачки.
+      - name: Память для линковки.
+        uses: al-cheb/configure-pagefile-action@9b6da52fb72a3c6147c1aad2df22d8d905681adc
+        with:
+          minimum-size: 16GB
+          maximum-size: 32GB
+          disk-root: 'D:'
+
       - name: netgram build.
         run: |
           cd %TBUILD%\%REPO_NAME%\Telegram
