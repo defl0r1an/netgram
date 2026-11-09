@@ -485,9 +485,8 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
             pass
 
     # Owner
-    def plugin_of(original, normalized):
-        rest = normalized[_len(plugins_root):]
-        tail = original[_len(original) - _len(rest):] if _len(original) >= _len(rest) else rest
+    def plugin_of(normalized):
+        tail = normalized[_len(plugins_root):]
         pieces = [p for p in _split(_replace(tail, "/", sep), sep) if p]
         if not pieces:
             return UNKNOWN
@@ -513,9 +512,11 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
                 if not _sw(name, "<frozen"):
                     anon = True
             else:
-                path = norm(name)
-                if inside(path, plugins_root):
-                    found = plugin_of(name, path)
+                # Match frame paths to canonical roots, including Windows 8.3 names
+                # and directory junctions. Lexical normalization misses these aliases.
+                path = absolute(name)
+                if path is not None and inside(path, plugins_root):
+                    found = plugin_of(path)
                     if plugin is None:
                         plugin = found
                     _append(chain, norm(found))

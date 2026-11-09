@@ -1,7 +1,7 @@
 """Access-control regression checks in disposable Python 3.11 processes.
 
-The native C++ audit hook is covered by the client build; these tests exercise
-the SDK fallback audit hook with a mocked native interface and no account.
+These tests exercise the SDK fallback audit hook with a mocked native
+interface and no account. The native C++ hook requires client verification.
 """
 import json
 from pathlib import Path
@@ -35,8 +35,8 @@ print(json.dumps(value))
 
 @unittest.skipUnless(sys.version_info[:2] == (3, 11), 'embedded runtime is Python 3.11')
 class SandboxTests(unittest.TestCase):
-    def check_blocked(self, operation):
-        with tempfile.TemporaryDirectory() as folder:
+    def check_blocked(self, operation, short_path=False):
+        with tempfile.TemporaryDirectory(prefix="netgram sandbox regression ") as folder:
             root = Path(folder)
             marker = root/'outside.txt'
             source = ('__id__="sandbox_test"\n__name__="Sandbox test"\n__version__="1.0"\n'
@@ -46,6 +46,13 @@ class SandboxTests(unittest.TestCase):
             (root/'input.plugin').write_text(source, encoding='utf-8')
             worker = root/'worker.py'
             worker.write_text(WORKER, encoding='utf-8')
+            if short_path:
+                import ctypes
+                buffer = ctypes.create_unicode_buffer(32768)
+                size = ctypes.windll.kernel32.GetShortPathNameW(folder, buffer, len(buffer))
+                if not size or size >= len(buffer) or buffer.value.lower() == folder.lower():
+                    self.skipTest('Windows short paths are unavailable on this volume')
+                folder = buffer.value
             result = subprocess.run([sys.executable, str(worker), str(SDK), folder],
                 capture_output=True, text=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stderr+result.stdout)
@@ -57,6 +64,14 @@ class SandboxTests(unittest.TestCase):
 
     def test_cannot_connect_to_local_network_without_permission(self):
         self.check_blocked(lambda marker: 'import socket\nsocket.socket().connect(("127.0.0.1", 9))')
+
+    @unittest.skipUnless(sys.platform == 'win32', 'Windows 8.3 path alias')
+    def test_short_path_cannot_write_outside_plugin_directory(self):
+        self.check_blocked(lambda marker: f'open({marker!r}, "w").write("blocked")', short_path=True)
+
+    @unittest.skipUnless(sys.platform == 'win32', 'Windows 8.3 path alias')
+    def test_short_path_cannot_connect_to_local_network(self):
+        self.check_blocked(lambda marker: 'import socket\nsocket.socket().connect(("127.0.0.1", 9))', short_path=True)
 
 
 if __name__ == '__main__':
