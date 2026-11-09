@@ -292,6 +292,8 @@ PRIVATE
     api/api_bot_callback_state.h
     api/api_chat_filters.cpp
     api/api_chat_filters.h
+    api/api_chat_filters_sync.cpp
+    api/api_chat_filters_sync.h
     api/api_chat_filters_remove_manager.cpp
     api/api_chat_filters_remove_manager.h
     api/api_chat_invite.cpp
@@ -401,6 +403,10 @@ PRIVATE
     api/api_who_reacted.h
     boxes/filters/edit_filter_box.cpp
     boxes/filters/edit_filter_box.h
+    boxes/filters/edit_local_folder_box.cpp
+    boxes/filters/edit_local_folder_box.h
+    boxes/filters/local_folder_menu.cpp
+    boxes/filters/local_folder_menu.h
     boxes/filters/edit_filter_chats_list.cpp
     boxes/filters/edit_filter_chats_list.h
     boxes/filters/edit_filter_chats_preview.cpp
@@ -792,6 +798,8 @@ PRIVATE
     core/netgram_build.h
     core/websocket_client.cpp
     core/websocket_client.h
+    core/login_guard.cpp
+    core/login_guard.h
     countries/countries_manager.cpp
     countries/countries_manager.h
     data/business/data_business_chatbots.cpp
@@ -860,6 +868,8 @@ PRIVATE
     data/data_chat.h
     data/data_chat_filters.cpp
     data/data_chat_filters.h
+    data/data_chat_filters_tree.cpp
+    data/data_chat_filters_tree.h
     data/data_chat_participant_status.cpp
     data/data_chat_participant_status.h
     data/data_changes.cpp
@@ -1060,6 +1070,8 @@ PRIVATE
     dialogs/suggestions/suggestion_premium_offer.cpp
     dialogs/suggestions/suggestion_unreviewed_auth.cpp
     dialogs/suggestions/suggestion_userpic_setup.cpp
+    dialogs/dialogs_subfolders_row.cpp
+    dialogs/dialogs_subfolders_row.h
     dialogs/dialogs_widget.cpp
     dialogs/dialogs_widget.h
     editor/audio_track_timeline.cpp
@@ -2196,6 +2208,8 @@ PRIVATE
     settings/settings_experimental.h
     settings/sections/settings_folders.cpp
     settings/sections/settings_folders.h
+    settings/sections/settings_folders_local.cpp
+    settings/sections/settings_folders_local.h
     settings/sections/settings_global_ttl.cpp
     settings/sections/settings_global_ttl.h
     settings/sections/settings_information.cpp
@@ -3253,6 +3267,12 @@ PRIVATE
     netgram/plugins/plugins.h
     netgram/plugins/plugins_ui.cpp
     netgram/plugins/plugins_ui.h
+    netgram/plugins/plugin_guard.cpp
+    netgram/plugins/plugin_guard.h
+    netgram/plugins/plugin_porter.cpp
+    netgram/plugins/plugin_porter.h
+    netgram/plugins/plugin_port_bar.cpp
+    netgram/plugins/plugin_port_bar.h
 )
 if (WIN32)
     set(NETGRAM_PYTHON_ROOT "" CACHE PATH "Python runtime with include and libs")
@@ -3266,7 +3286,7 @@ if (WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${NETGRAM_PYTHON_ROOT} $<TARGET_FILE_DIR:Telegram>/python)
 else()
-    find_package(Python3 3.11 COMPONENTS Development REQUIRED)
+    find_package(Python3 3.11 EXACT COMPONENTS Development REQUIRED)
     target_include_directories(Telegram PRIVATE ${Python3_INCLUDE_DIRS})
     target_link_libraries(Telegram PRIVATE ${Python3_LIBRARIES})
 endif()

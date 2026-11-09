@@ -349,6 +349,12 @@ jobs:
             if (!(Test-Path -LiteralPath "$runtime\$file")) { throw "Python runtime is incomplete: $file" }
           }
           "NETGRAM_PYTHON_ROOT=$runtime" >> $env:GITHUB_ENV
+          & "$runtime\python.exe" -m pip install --only-binary=:all: --disable-pip-version-check requests beautifulsoup4 lxml pillow PyYAML packaging
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin SDK dependencies failed' }
+          & "$runtime\python.exe" "$env:TBUILD\$env:REPO_NAME\Telegram\SourceFiles\tests\test_plugin_runtime.py"
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin runtime tests failed' }
+          & "$runtime\python.exe" "$env:TBUILD\$env:REPO_NAME\Telegram\SourceFiles\tests\test_plugin_sandbox.py"
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin access control tests failed' }
 
       # Статическая линковка клиента требует больше памяти, чем доступно
       # на стандартном Windows runner без дополнительной подкачки.

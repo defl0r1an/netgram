@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "core/ui_integration.h"
+#include "netgram/plugins/plugins.h"
 
 #include "api/api_text_entities.h"
 #include "core/local_url_handlers.h"
@@ -432,6 +433,11 @@ bool UiIntegration::handleUrlClick(
 		return true;
 	}
 
+	if (!local.startsWith(u"tg://"_q, Qt::CaseInsensitive)
+		&& !local.startsWith(u"internal:"_q, Qt::CaseInsensitive)
+		&& Netgram::Plugins::InterceptUrl(url)) {
+		return true;
+	}
 	if (UrlClickHandler::IsEmail(url)) {
 		File::OpenEmailLink(url);
 		return true;

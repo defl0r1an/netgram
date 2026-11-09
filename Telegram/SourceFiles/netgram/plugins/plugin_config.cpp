@@ -11,6 +11,18 @@ constexpr auto kSaveDelay = crl::time(1000);
 
 [[nodiscard]] const QJsonObject &Defaults() {
 	static const auto result = QJsonObject{
+		{ u"plugins_guard"_q, 0 },
+		{ u"guard_llm_provider"_q, 0 },
+		{ u"guard_llm_key"_q, QString() },
+		{ u"guard_llm_model"_q, QString() },
+		{ u"port_llm_provider"_q, 0 },
+		{ u"port_llm_key"_q, QString() },
+		{ u"port_llm_model"_q, QString() },
+		{ u"port_llm_endpoint"_q, QString() },
+		{ u"port_llm_mode"_q, 0 },
+		{ u"guard_model_check"_q, 0 },
+		{ u"guard_model_version"_q, QString() },
+		{ u"plugins_guard_blocked"_q, QString() },
 		{ u"plugins_no_auto_safe"_q, false },
 		{ u"plugins_enabled"_q, true },
 		{ u"plugins_pinned"_q, QString() },

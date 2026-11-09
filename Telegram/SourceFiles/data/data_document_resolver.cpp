@@ -6,6 +6,8 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "data/data_document_resolver.h"
+#include "netgram/plugins/plugins.h"
+#include "netgram/plugins/plugins_ui.h"
 
 #include "base/platform/base_platform_info.h"
 #include "boxes/abstract_box.h" // Ui::show().
@@ -257,6 +259,13 @@ void ResolveDocument(
 
 	const auto media = document->createMediaView();
 	const auto openPluginInfo = [&] {
+		if (controller && Netgram::Plugins::Started()
+			&& Netgram::Plugins::IsPluginFile(document->filename())
+			&& document->size < Images::kReadBytesLimit
+			&& !document->filepath(true).isEmpty()) {
+			Netgram::Plugins::ShowInstallBox(controller, document->location(true).name(), false);
+			return true;
+		}
 		if (document->size >= Images::kReadBytesLimit) {
 			return false;
 		}

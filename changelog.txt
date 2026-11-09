@@ -1,3 +1,9 @@
+7.3.4 (netgram)
+
+- Updated plugin compatibility, access permissions and local plugin scanning.
+- Added nested local folders, chat tags and folder synchronization.
+- Added protection against sending Telegram login codes.
+
 7.3.3 (03.11.26)
 
 - Show TON DNS gift owners as links, not address groups.

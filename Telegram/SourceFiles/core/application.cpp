@@ -506,6 +506,9 @@ void Application::run() {
 
 	_savedWindows->startRestore();
 	Netgram::Plugins::Start();
+	QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, [](Qt::ApplicationState state) {
+		Netgram::Plugins::NotifyAppEvent(state == Qt::ApplicationActive ? u"app_resume"_q : u"app_pause"_q);
+	});
 
 	Test::Fire(u"launch_finished"_q);
 	Test::Start();
@@ -1358,6 +1361,9 @@ void Application::registerWindowActivation(not_null<QWidget*> window) {
 }
 
 bool Application::openLocalUrl(const QString &url, QVariant context) {
+	if (Netgram::Plugins::InterceptLocalUrl(url.trimmed())) {
+		return true;
+	}
 	const auto urlTrimmed = url.trimmed();
 	const auto protocol = u"tg://"_q;
 	if (urlTrimmed.startsWith(protocol, Qt::CaseInsensitive)

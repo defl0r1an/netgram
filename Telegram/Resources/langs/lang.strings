@@ -905,6 +905,35 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_settings_peer_to_peer_about" = "Disabling peer-to-peer will relay all calls through Telegram servers to avoid revealing your IP address, but may decrease audio and video quality.";
 "lng_settings_advanced" = "Advanced";
 "lng_zasto_media_speed" = "Speed";
+"lng_zsg_folders_title" = "netgram folders";
+"lng_zsg_folders_about" = "These folders live on your devices, so there is no limit on their number. Drag a folder to reorder it: drop it on the middle of another folder to put it inside, or between folders to put it next to them. Right-click a folder for more actions. A folder can contain subfolders: open its tab, and its subfolders appear in a row under the tabs, with the path above them to go back up. A parent folder shows the chats of all its subfolders. Turn synchronization off for a folder to keep it on this device only.";
+"lng_zsg_folders_create" = "Create netgram folder";
+"lng_zsg_folders_new_title" = "New folder";
+"lng_zsg_folders_edit_title" = "Edit folder";
+"lng_zsg_folders_name" = "Folder name";
+"lng_zsg_folders_icon" = "Icon: any emoji";
+"lng_zsg_folders_color" = "Color: any, as #RRGGBB";
+"lng_zsg_folders_sync" = "Synchronize with other devices";
+"lng_zsg_folders_local_only" = "this device only";
+"lng_zsg_folders_menu_to_top" = "Move to top level";
+"lng_zsg_folders_menu_sync_off" = "Keep on this device only";
+"lng_zsg_folders_menu_sync_on" = "Synchronize with other devices";
+"lng_zsg_folders_parent" = "Parent folder";
+"lng_zsg_folders_top_level" = "Top level";
+"lng_zsg_folders_move_up" = "Move up";
+"lng_zsg_folders_move_down" = "Move down";
+"lng_zsg_folders_chats" = "Chats in the folder…";
+"lng_zsg_folders_pick_title" = "Chats in the folder";
+"lng_zsg_folders_sync_too_large" = "netgram folders are too large to synchronize ({size} KB, the limit is {limit} KB). Turn off synchronization for some folders.";
+"lng_zsg_folders_sync_flood" = "Telegram limits how often netgram folders can be saved. Synchronization will continue in {seconds} s.";
+"lng_zsg_folders_subfolder" = "New subfolder";
+"lng_zsg_folders_delete" = "Delete folder";
+"lng_zsg_folders_delete_sure" = "Delete \"{name}\" with all its subfolders? The chats themselves are not deleted.";
+"lng_zsg_folders_chats_count#one" = "{count} chat";
+"lng_zsg_folders_chats_count#other" = "{count} chats";
+"lng_zsg_folders_subfolders_count#one" = "{count} subfolder";
+"lng_zsg_folders_subfolders_count#other" = "{count} subfolders";
+"lng_zsg_folders_new_sub_title" = "New subfolder in {name}";
 "lng_zasto_media_brightness" = "Brightness";
 "lng_zasto_media_volume_gain" = "Volume";
 "lng_zasto_article_details" = "Collapsible block (details)";
@@ -10075,3 +10104,377 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_netgram_plugins_manager_export" = "Export installed plugins";
 
 "lng_netgram_plugins_manager_not_running" = "Enable the plugin engine and restart the app.";
+
+"lng_netgram_plugins_plugins_runtime_missing" = "Python runtime was not found next to the application.";
+
+"lng_netgram_plugins_x_guard_analysis" = "Plugin Analysis";
+
+"lng_netgram_plugins_x_guard_blocked_before" = "This plugin was previously marked as unwanted after a security check and cannot be installed.";
+
+"lng_netgram_plugins_x_guard_capabilities" = "Capabilities";
+
+"lng_netgram_plugins_x_guard_checking" = "Checking the plugin...";
+
+"lng_netgram_plugins_x_guard_checking_about" = "Static rules, vector model and AI arbiter";
+
+"lng_netgram_plugins_x_guard_disabled" = "The plugin is disabled and marked as unwanted.";
+
+"lng_netgram_plugins_x_guard_failed" = "The plugin could not be checked.";
+
+"lng_netgram_plugins_x_guard_finding_critical" = "Critical";
+
+"lng_netgram_plugins_x_guard_finding_high" = "High";
+
+"lng_netgram_plugins_x_guard_finding_warning" = "Warning";
+
+"lng_netgram_plugins_x_guard_install_blocked" = "Installation Blocked";
+
+"lng_netgram_plugins_x_guard_level_clean" = "no threats";
+
+"lng_netgram_plugins_x_guard_level_high" = "critical threat";
+
+"lng_netgram_plugins_x_guard_level_low" = "low risk";
+
+"lng_netgram_plugins_x_guard_level_medium" = "medium risk";
+
+"lng_netgram_plugins_x_guard_line" = "line {amount}";
+
+"lng_netgram_plugins_x_guard_llm" = "AI Arbiter";
+
+"lng_netgram_plugins_x_guard_llm_confidence" = "Confidence: {amount}%";
+
+"lng_netgram_plugins_x_guard_llm_error" = "AI arbiter is unavailable";
+
+"lng_netgram_plugins_x_guard_llm_malicious" = "Malicious";
+
+"lng_netgram_plugins_x_guard_llm_off" = "Not Set Up";
+
+"lng_netgram_plugins_x_guard_llm_off_about" = "Select a service and an API key in plugin engine settings.";
+
+"lng_netgram_plugins_x_guard_llm_safe" = "Safe";
+
+"lng_netgram_plugins_x_guard_llm_short" = "AI";
+
+"lng_netgram_plugins_x_guard_llm_suspicious" = "Suspicious";
+
+"lng_netgram_plugins_x_guard_name" = "PluginGuard";
+
+"lng_netgram_plugins_x_guard_network" = "Network Addresses";
+
+"lng_netgram_plugins_x_guard_no_model" = "The vector model is unavailable, only static rules were applied.";
+
+"lng_netgram_plugins_x_guard_report" = "Report Plugin";
+
+"lng_netgram_plugins_x_guard_report_admin" = "You manage the plugins channel, so the report cannot be sent to its direct messages. The report text is copied.";
+
+"lng_netgram_plugins_x_guard_report_author" = "Authors";
+
+"lng_netgram_plugins_x_guard_report_copied" = "Direct messages of the channel are unavailable. The report text is copied.";
+
+"lng_netgram_plugins_x_guard_report_failed" = "The plugins channel could not be found.";
+
+"lng_netgram_plugins_x_guard_report_header" = "Plugin report";
+
+"lng_netgram_plugins_x_guard_report_name" = "Name";
+
+"lng_netgram_plugins_x_guard_report_score" = "Score";
+
+"lng_netgram_plugins_x_guard_report_sent" = "The report has been sent.";
+
+"lng_netgram_plugins_x_guard_report_version" = "Version";
+
+"lng_netgram_plugins_x_guard_result" = "{level} · {score}/100";
+
+"lng_netgram_plugins_x_guard_rule_ai" = "Threat confirmed by the AI arbiter";
+
+"lng_netgram_plugins_x_guard_rule_clipper" = "Wallet address substitution";
+
+"lng_netgram_plugins_x_guard_rule_codes" = "Interception of login codes";
+
+"lng_netgram_plugins_x_guard_rule_dynamic" = "Dynamic code execution";
+
+"lng_netgram_plugins_x_guard_rule_exfiltration" = "Data sending to external servers";
+
+"lng_netgram_plugins_x_guard_rule_ip" = "IP address detection";
+
+"lng_netgram_plugins_x_guard_rule_malware" = "Malicious fragments found: {amount}";
+
+"lng_netgram_plugins_x_guard_rule_obfuscation" = "Obfuscated code";
+
+"lng_netgram_plugins_x_guard_rule_remote_code" = "Running code downloaded from the network";
+
+"lng_netgram_plugins_x_guard_rule_session" = "Access to session data";
+
+"lng_netgram_plugins_x_guard_rule_similar" = "Similarity to known malicious code";
+
+"lng_netgram_plugins_x_guard_rule_system" = "System commands and native code";
+
+"lng_netgram_plugins_x_guard_run" = "Check Plugin";
+
+"lng_netgram_plugins_x_guard_threats" = "Threats: {amount}";
+
+"lng_netgram_plugins_x_guard_threats_none" = "No threats found.";
+
+"lng_netgram_plugins_x_guard_vector_anomaly" = "Anomaly";
+
+"lng_netgram_plugins_x_guard_vector_base" = "Vectors in base: clean {clean}, malware {malware}";
+
+"lng_netgram_plugins_x_guard_vector_chunks" = "Fragments checked: {amount}, malicious: {count_malware}, suspicious: {count_suspicious}";
+
+"lng_netgram_plugins_x_guard_vector_clean" = "Clean";
+
+"lng_netgram_plugins_x_guard_vector_malicious" = "Malicious";
+
+"lng_netgram_plugins_x_guard_vector_malware_sim" = "Max similarity to malware: {amount}";
+
+"lng_netgram_plugins_x_guard_vector_short" = "model";
+
+"lng_netgram_plugins_x_guard_vector_similarity" = "Top-5 similarity: mean {mean}, min {min}";
+
+"lng_netgram_plugins_x_guard_vector_title" = "Vector Model";
+
+"lng_netgram_plugins_x_guard_vector_unavailable" = "Unavailable";
+
+"lng_netgram_plugins_x_partial_area_cells" = "Message cells";
+
+"lng_netgram_plugins_x_partial_area_chat" = "Chat screen";
+
+"lng_netgram_plugins_x_partial_area_data" = "Client data and limits";
+
+"lng_netgram_plugins_x_partial_area_dialogs" = "Chat list";
+
+"lng_netgram_plugins_x_partial_area_input" = "Message input field";
+
+"lng_netgram_plugins_x_partial_area_media" = "Camera, media and stories";
+
+"lng_netgram_plugins_x_partial_area_other" = "Other functions";
+
+"lng_netgram_plugins_x_partial_area_profile" = "Profile";
+
+"lng_netgram_plugins_x_partial_area_ui" = "Android interface";
+
+"lng_netgram_plugins_x_partial_why" = "Why some functions do not work";
+
+"lng_netgram_plugins_x_partial_works" = "Works on desktop";
+
+"lng_netgram_plugins_x_partial_works_api" = "Menu items, request hooks, message sending and Telegram API calls";
+
+"lng_netgram_plugins_x_partial_works_settings" = "Plugin settings";
+
+"lng_netgram_plugins_x_perm_chip" = "Request";
+
+"lng_netgram_plugins_x_perm_domain" = "Domain";
+
+"lng_netgram_plugins_x_perm_folder" = "Folder";
+
+"lng_netgram_plugins_x_perm_request_about" = "The decision can be changed in the plugin settings, Permissions section";
+
+"lng_netgram_plugins_x_perm_request_files" = "File access request";
+
+"lng_netgram_plugins_x_perm_request_net" = "Internet access request";
+
+"lng_netgram_plugins_x_plugin_desktop" = "Optimized for netgram";
+
+"lng_netgram_plugins_x_plugin_installing_deps" = "Installing dependencies";
+
+"lng_netgram_plugins_x_plugin_installing_deps_toast" = "{name} is installed, dependencies are being installed in the background";
+
+"lng_netgram_plugins_x_plugin_no_settings" = "The plugin has no settings.";
+
+"lng_netgram_plugins_x_plugin_partial" = "Works partially";
+
+"lng_netgram_plugins_x_plugin_partial_about" = "The plugin modifies Android interface elements. The following functions do not work in netgram:";
+
+"lng_netgram_plugins_x_plugin_perm_about" = "Internet access is requested for each site. Access to folders outside the plugin folder is granted at your own risk.";
+
+"lng_netgram_plugins_x_plugin_perm_allowed" = "Allowed";
+
+"lng_netgram_plugins_x_plugin_perm_denied" = "Denied";
+
+"lng_netgram_plugins_x_plugin_perm_folder" = "Folder access";
+
+"lng_netgram_plugins_x_plugin_perm_none" = "No permissions granted";
+
+"lng_netgram_plugins_x_plugin_perm_reset" = "Reset";
+
+"lng_netgram_plugins_x_plugin_perm_reset_all" = "Reset All Permissions";
+
+"lng_netgram_plugins_x_plugin_perm_reset_all_sure" = "Reset all permissions of this plugin? It will request them again.";
+
+"lng_netgram_plugins_x_plugin_perm_revoke_sure" = "Reset the permission for {target}? The plugin will request it again.";
+
+"lng_netgram_plugins_x_plugin_permissions" = "Permissions";
+
+"lng_netgram_plugins_x_plugin_port" = "Port with AI";
+
+"lng_netgram_plugins_x_plugin_ported" = "Ported from Android with AI";
+
+"lng_netgram_plugins_x_plugin_ported_os" = "Ported from Android with AI for {os}";
+
+"lng_netgram_plugins_x_plugin_reload" = "Reload";
+
+"lng_netgram_plugins_x_plugin_reloaded" = "{name} reloaded";
+
+"lng_netgram_plugins_x_plugin_settings_off" = "Settings are available after the plugin is enabled.";
+
+"lng_netgram_plugins_x_plugin_share" = "Share File";
+
+"lng_netgram_plugins_x_plugins_dll_failed" = "Python engine could not be loaded (code {code}). Reinstall netgram with the installer or install Microsoft Visual C++ Redistributable 2015-2022 x64.";
+
+"lng_netgram_plugins_x_port_action" = "Port with AI";
+
+"lng_netgram_plugins_x_port_advice" = "Recommendation";
+
+"lng_netgram_plugins_x_port_advice_text" = "Local and free models often fail on large plugins. Gemini with a free Google AI Studio key or a larger model gives better results.";
+
+"lng_netgram_plugins_x_port_background" = "Porting continues in the background";
+
+"lng_netgram_plugins_x_port_bar_done" = "Porting complete, open the result";
+
+"lng_netgram_plugins_x_port_bar_failed" = "Porting failed, open the details";
+
+"lng_netgram_plugins_x_port_bar_nothing" = "No porting required, open the result";
+
+"lng_netgram_plugins_x_port_busy" = "Another plugin is being ported";
+
+"lng_netgram_plugins_x_port_cancel" = "Cancel porting";
+
+"lng_netgram_plugins_x_port_changed" = "Changed";
+
+"lng_netgram_plugins_x_port_docs_requested" = "The model requested sections: {list}";
+
+"lng_netgram_plugins_x_port_done" = "Porting Complete";
+
+"lng_netgram_plugins_x_port_done_about" = "The ported plugin is installed separately from the original and is checked by PluginGuard.";
+
+"lng_netgram_plugins_x_port_dropped" = "Not ported";
+
+"lng_netgram_plugins_x_port_error_empty" = "The model returned an empty answer.";
+
+"lng_netgram_plugins_x_port_error_format" = "Porting of .elyx archives is not supported.";
+
+"lng_netgram_plugins_x_port_error_limit" = "The request exceeds the limit of the service plan. Free Groq and OpenRouter plans allow only a few thousand tokens per request, which is not enough for most plugins. Gemini with a free Google AI Studio key or a local model is recommended.";
+
+"lng_netgram_plugins_x_port_error_size" = "The plugin is too large for porting.";
+
+"lng_netgram_plugins_x_port_failed" = "Porting failed";
+
+"lng_netgram_plugins_x_port_failed_checks" = "The result did not pass the checks:";
+
+"lng_netgram_plugins_x_port_finished_toast" = "Porting of {name} is complete";
+
+"lng_netgram_plugins_x_port_fixed" = "Errors returned for fixing: {value}";
+
+"lng_netgram_plugins_x_port_hints" = "Hints for the model";
+
+"lng_netgram_plugins_x_port_kept" = "Ported";
+
+"lng_netgram_plugins_x_port_library" = "Library plugin: the identifier is kept, dependent plugins continue to work.";
+
+"lng_netgram_plugins_x_port_local_title" = "Local model";
+
+"lng_netgram_plugins_x_port_minimize" = "Minimize";
+
+"lng_netgram_plugins_x_port_not_configured" = "Select an AI service and API key in the plugin engine settings.";
+
+"lng_netgram_plugins_x_port_nothing" = "The plugin functions work only in the Android interface. There is nothing to port with the current SDK.";
+
+"lng_netgram_plugins_x_port_nothing_title" = "Nothing to port";
+
+"lng_netgram_plugins_x_port_open_settings" = "Service settings";
+
+"lng_netgram_plugins_x_port_provider_anthropic" = "Claude (Anthropic)";
+
+"lng_netgram_plugins_x_port_provider_custom" = "Custom endpoint";
+
+"lng_netgram_plugins_x_port_provider_deepseek" = "DeepSeek";
+
+"lng_netgram_plugins_x_port_provider_gemini" = "Gemini (Google)";
+
+"lng_netgram_plugins_x_port_provider_groq" = "Groq";
+
+"lng_netgram_plugins_x_port_provider_lmstudio" = "LM Studio (local)";
+
+"lng_netgram_plugins_x_port_provider_none" = "Not used";
+
+"lng_netgram_plugins_x_port_provider_ollama" = "Ollama (local)";
+
+"lng_netgram_plugins_x_port_provider_openai" = "ChatGPT (OpenAI)";
+
+"lng_netgram_plugins_x_port_provider_openrouter" = "OpenRouter";
+
+"lng_netgram_plugins_x_port_sec" = "{seconds} s";
+
+"lng_netgram_plugins_x_port_service" = "Service and model";
+
+"lng_netgram_plugins_x_port_setup_about" = "Local and free models handle small plugins best. Large plugins require Gemini, Claude or GPT";
+
+"lng_netgram_plugins_x_port_setup_agent" = "Checks and automatic fixing";
+
+"lng_netgram_plugins_x_port_setup_key" = "API key";
+
+"lng_netgram_plugins_x_port_setup_key_empty" = "Not set";
+
+"lng_netgram_plugins_x_port_setup_key_local" = "Not required";
+
+"lng_netgram_plugins_x_port_setup_key_set" = "Set";
+
+"lng_netgram_plugins_x_port_setup_library" = "Library plugin: the original id is kept";
+
+"lng_netgram_plugins_x_port_setup_model" = "Model";
+
+"lng_netgram_plugins_x_port_setup_model_none" = "Not set";
+
+"lng_netgram_plugins_x_port_setup_plan" = "Request";
+
+"lng_netgram_plugins_x_port_setup_provider" = "Service";
+
+"lng_netgram_plugins_x_port_setup_request" = "Model request";
+
+"lng_netgram_plugins_x_port_setup_service" = "Service and model";
+
+"lng_netgram_plugins_x_port_setup_size" = "Request size: about {value} thousand tokens";
+
+"lng_netgram_plugins_x_port_setup_start" = "Start porting";
+
+"lng_netgram_plugins_x_port_stats" = "Attempts: {attempts}. Time: {time}. Model: {model}";
+
+"lng_netgram_plugins_x_port_step_active" = "In progress";
+
+"lng_netgram_plugins_x_port_step_answered" = "Answer received in {time}";
+
+"lng_netgram_plugins_x_port_step_attempt" = "Attempt {attempt} of {total}";
+
+"lng_netgram_plugins_x_port_step_check" = "Result check";
+
+"lng_netgram_plugins_x_port_step_done" = "Done";
+
+"lng_netgram_plugins_x_port_step_fixing" = "Fixing errors";
+
+"lng_netgram_plugins_x_port_step_model" = "Model answer";
+
+"lng_netgram_plugins_x_port_step_pending" = "Pending";
+
+"lng_netgram_plugins_x_port_step_prepare" = "Request preparation";
+
+"lng_netgram_plugins_x_port_step_prepare_info" = "Hints: {hints}. Reference sections: {sections}";
+
+"lng_netgram_plugins_x_port_step_waiting_for" = "Waiting for the answer: {time}";
+
+"lng_netgram_plugins_x_port_title" = "AI Porting";
+
+"lng_netgram_plugins_x_port_warning" = "Porting quality depends on the model. Weak and local models produce worse results, some functions may be lost.";
+
+"lng_netgram_plugins_x_unknown_protect_guard" = "PluginGuard checks the code before installation";
+
+"lng_netgram_plugins_x_unknown_protect_permissions" = "Internet access and folders outside the plugin folder are requested separately";
+
+"lng_netgram_plugins_x_unknown_protect_sandbox" = "Session files, other plugins, browsers and wallets are not accessible to the plugin";
+
+"lng_netgram_plugins_x_unknown_protect_title" = "Protection of netgram";
+
+"lng_netgram_plugins_x_unknown_risk_account" = "The plugin works on behalf of your account: it can read chats and send messages. A malicious plugin can harm you through the account even with the protection of netgram.";
+
+"lng_netgram_plugins_x_unknown_risk_check" = "Download plugins only from official sources. If part of the code is encrypted or unreadable, do not use the plugin.";
+
+"lng_netgram_plugins_x_unknown_risk_title" = "Risks";

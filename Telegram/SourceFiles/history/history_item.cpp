@@ -40,6 +40,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "apiwrap.h"
 #include "media/audio/media_audio.h"
 #include "core/application.h"
+#include "core/login_guard.h"
 #include "core/core_settings.h"
 #include "wallet/wallet_address.h"
 #include "wallet/wallet_fiat.h"
@@ -3450,6 +3451,7 @@ bool HistoryItem::allowsForward() const {
 		&& isRegular()
 		&& !forbidsForward()
 		&& history()->peer->allowsForwarding()
+		&& !Core::LoginGuard::BlocksForward(this)
 		&& (!_media || _media->allowsForward());
 }
 

@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "window/window_session_controller.h"
+#include "netgram/plugins/plugins.h"
 
 #include "apiwrap.h"
 #include "api/api_cloud_password.h"
@@ -1418,6 +1419,7 @@ void SessionNavigation::showPeerInfo(
 	//	Core::App().saveSettingsDelayed();
 	//}
 	showSection(std::make_shared<Info::Memento>(peer), params);
+	Netgram::Plugins::NotifyScreen(u"profile"_q, Netgram::Plugins::DialogId(peer));
 }
 
 void SessionNavigation::showPeerInfo(
@@ -1682,6 +1684,12 @@ SessionController::SessionController(
 		closeFolder();
 	}, lifetime());
 
+	activeChatChanges() | rpl::on_next([=](Dialogs::Key key) {
+		const auto peer = key.peer();
+		crl::on_main(this, [=] {
+			Netgram::Plugins::NotifyScreen(u"chat"_q, peer ? Netgram::Plugins::DialogId(peer) : 0);
+		});
+	}, lifetime());
 	const auto processFiltersMenu = [this] {
 		if (SessionNavigation::session().data().chatsFilters().has()) {
 			const auto isHorizontal
@@ -4173,26 +4181,28 @@ bool CheckAndJumpToNearChatsFilter(
 		bool jump) {
 	const auto id = controller->activeChatsFilterCurrent();
 	const auto session = &controller->session();
-	const auto list = &session->data().chatsFilters().list();
-	const auto index = int(ranges::find(
-		*list,
-		id,
-		&Data::ChatFilter::id
-	) - begin(*list));
-	if (index == list->size() && id != 0) {
+	const auto tabs = session->data().chatsFilters().tabs();
+	auto index = tabs.size();
+	for (auto i = 0; i != tabs.size(); ++i) {
+		if (tabs[i].id() == id) {
+			index = i;
+			break;
+		}
+	}
+	if (index == tabs.size() && id != 0) {
 		return false;
 	}
 	const auto changed = index + (isNext ? 1 : -1);
-	if (changed >= int(list->size()) || changed < 0) {
+	if (changed >= tabs.size() || changed < 0) {
 		return false;
 	}
-	if (changed > Data::PremiumLimits(session).dialogFiltersCurrent()) {
+	// netgram's own folders are not limited by Telegram's folder limit.
+	if (!Data::IsLocalFilterId(tabs[changed].id())
+		&& changed > Data::PremiumLimits(session).dialogFiltersCurrent()) {
 		return false;
 	}
 	if (jump) {
-		controller->setActiveChatsFilter((changed >= 0)
-			? (*list)[changed].id()
-			: 0);
+		controller->setActiveChatsFilter(tabs[changed].id());
 	}
 	return true;
 }

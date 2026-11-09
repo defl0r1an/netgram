@@ -73,6 +73,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_history_messages.h"
 #include "core/core_cloud_password.h"
 #include "core/application.h"
+#include "core/login_guard.h"
 #include "base/unixtime.h"
 #include "base/random.h"
 #include "base/call_delayed.h"
@@ -4835,6 +4836,9 @@ void ApiWrap::sendRichMessage(
 void ApiWrap::sendMessage(
 		MessageToSend &&message,
 		std::optional<MsgId> localMessageId) {
+	if (Core::LoginGuard::CheckOutgoing(_session, message.textWithTags.text)) {
+		return;
+	}
 	if (!Netgram::Plugins::Bypassing()) {
 		const auto result = Netgram::Plugins::OnSendMessage(
 			message.action.history,
@@ -4853,6 +4857,11 @@ void ApiWrap::sendMessage(
 	const auto history = message.action.history;
 	const auto peer = history->peer;
 	const auto &textWithTags = message.textWithTags;
+
+	// netgram: a fresh login code is never sent to anyone.
+	if (Core::LoginGuard::CheckOutgoing(_session, textWithTags.text)) {
+		return;
+	}
 
 	auto action = message.action;
 	action.generateLocal = true;

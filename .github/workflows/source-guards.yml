@@ -35,6 +35,11 @@ jobs:
           test -f Telegram/configure.sh
           bash -n Telegram/configure.sh
 
+      - name: Python plugin test runtime.
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
       - name: Validate Python build helpers.
         run: python3 -m compileall -q Telegram/build Telegram/configure.py Telegram/Resources/art/netgram
 
@@ -52,6 +57,9 @@ jobs:
 
       - name: Test plugin runtime.
         run: python3 Telegram/SourceFiles/tests/test_plugin_runtime.py
+
+      - name: Test plugin access control.
+        run: python3 Telegram/SourceFiles/tests/test_plugin_sandbox.py
 
       - name: Test Windows batch generation.
         run: python3 Telegram/SourceFiles/tests/test_prepare_windows_batch.py

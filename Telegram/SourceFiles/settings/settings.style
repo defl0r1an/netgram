@@ -777,6 +777,8 @@ netgramPluginIconPlugins: icon {{ "netgram/plugins/plugins", menuIconColor }};
 
 netgramPluginIconOpenCode: icon {{ "netgram/plugins/open_code-24x24", menuIconColor }};
 
+netgramPluginIconMore: icon {{ "title_menu_dots", menuIconColor }};
+
 netgramPluginAboutPadding: margins(34px, 8px, 34px, 6px);
 
 netgramPluginAbout: FlatLabel(defaultFlatLabel) {
@@ -841,6 +843,21 @@ netgramPluginInstallName: FlatLabel(defaultFlatLabel) {
 
 netgramPluginInstallNamePadding: margins(22px, 12px, 22px, 0px);
 
+netgramPluginBlockedTitle: FlatLabel(defaultFlatLabel) {
+	align: align(top);
+	minWidth: 320px;
+	textFg: attentionButtonFg;
+	style: TextStyle(defaultTextStyle) {
+		font: font(15px semibold);
+	}
+}
+
+netgramPluginBlockedText: FlatLabel(defaultFlatLabel) {
+	align: align(top);
+	minWidth: 320px;
+	textFg: windowSubTextFg;
+}
+
 netgramPluginInstallVersion: FlatLabel(defaultFlatLabel) {
 	align: align(top);
 	minWidth: 320px;
@@ -852,9 +869,9 @@ netgramPluginInstallVersion: FlatLabel(defaultFlatLabel) {
 
 netgramPluginInstallVersionPadding: margins(22px, 6px, 22px, 0px);
 
-netgramPluginInstallShield: icon {{ "netgram/plugins/warning-20x20", windowFg }};
+netgramPluginInstallShield: icon {{ "menu/exd_warning-20x20", windowFg }};
 
-netgramPluginInstallPuzzle: icon {{ "netgram/plugins/puzzle-20x20", windowFg }};
+netgramPluginInstallPuzzle: icon {{ "menu/exd_puzzle-20x20", windowFg }};
 
 netgramPluginInstallPillFont: font(14px semibold);
 
@@ -907,7 +924,9 @@ netgramPluginTopActionsMargin: margins(0px, 14px, 14px, 0px);
 
 netgramPluginTopActionTranslate: icon {{ "menu/translate", windowSubTextFg }};
 
-netgramPluginTopActionCode: icon {{ "netgram/plugins/code", windowSubTextFg }};
+netgramPluginTopActionCode: icon {{ "menu/exd_code", windowSubTextFg }};
+
+netgramPluginTopActionReport: icon {{ "menu/report", windowSubTextFg }};
 
 netgramPluginThreatTile: 44px;
 
@@ -964,33 +983,33 @@ netgramPluginThreatSectionTitle: FlatLabel(defaultFlatLabel) {
 
 netgramPluginThreatSectionPadding: margins(22px, 16px, 22px, 8px);
 
-netgramPluginThreatAlert: icon {{ "netgram/plugins/alert-24x24", windowFg }};
+netgramPluginThreatAlert: icon {{ "menu/exd_alert-24x24", windowFg }};
 
-netgramPluginThreatOk: icon {{ "netgram/plugins/shield_ok-24x24", windowFg }};
+netgramPluginThreatOk: icon {{ "menu/exd_shield_ok-24x24", windowFg }};
 
-netgramPluginThreatCode: icon {{ "netgram/plugins/code-24x24", windowFg }};
+netgramPluginThreatCode: icon {{ "menu/exd_code-24x24", windowFg }};
 
-netgramPluginThreatGlobe: icon {{ "netgram/plugins/globe-24x24", windowFg }};
+netgramPluginThreatGlobe: icon {{ "menu/exd_globe-24x24", windowFg }};
 
-netgramPluginThreatFile: icon {{ "netgram/plugins/file-24x24", windowFg }};
+netgramPluginThreatFile: icon {{ "menu/exd_file-24x24", windowFg }};
 
-netgramPluginThreatChat: icon {{ "netgram/plugins/chat-24x24", windowFg }};
+netgramPluginThreatChat: icon {{ "menu/exd_chat-24x24", windowFg }};
 
-netgramPluginThreatLink: icon {{ "netgram/plugins/link-24x24", windowFg }};
+netgramPluginThreatLink: icon {{ "menu/exd_link-24x24", windowFg }};
 
-netgramPluginThreatTune: icon {{ "netgram/plugins/tune-24x24", windowFg }};
+netgramPluginThreatTune: icon {{ "menu/exd_tune-24x24", windowFg }};
 
-netgramPluginChipCode: icon {{ "netgram/plugins/code-18x18", windowFg }};
+netgramPluginChipCode: icon {{ "menu/exd_code-18x18", windowFg }};
 
-netgramPluginChipGlobe: icon {{ "netgram/plugins/globe-18x18", windowFg }};
+netgramPluginChipGlobe: icon {{ "menu/exd_globe-18x18", windowFg }};
 
-netgramPluginChipFile: icon {{ "netgram/plugins/file-18x18", windowFg }};
+netgramPluginChipFile: icon {{ "menu/exd_file-18x18", windowFg }};
 
-netgramPluginChipChat: icon {{ "netgram/plugins/chat-18x18", windowFg }};
+netgramPluginChipChat: icon {{ "menu/exd_chat-18x18", windowFg }};
 
-netgramPluginChipLink: icon {{ "netgram/plugins/link-18x18", windowFg }};
+netgramPluginChipLink: icon {{ "menu/exd_link-18x18", windowFg }};
 
-netgramPluginChipTune: icon {{ "netgram/plugins/tune-18x18", windowFg }};
+netgramPluginChipTune: icon {{ "menu/exd_tune-18x18", windowFg }};
 
 netgramPluginPluginCardRadius: 16px;
 
@@ -1018,6 +1037,7 @@ netgramPluginPluginCode: FlatLabel(defaultFlatLabel) {
 netgramPluginPluginNameButton: SettingsButton(settingsButtonNoIcon) {
 	textBg: transparent;
 	textBgOver: transparent;
+	ripple: emptyRippleAnimation;
 }
 
 netgramPluginSourceText: FlatLabel(defaultFlatLabel) {

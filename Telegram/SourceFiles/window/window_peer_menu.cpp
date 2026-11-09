@@ -1978,6 +1978,10 @@ void Filler::fillHistoryActions() {
 }
 
 void Filler::fillProfileActions() {
+	Netgram::Plugins::AddProfileMenuItems(
+		[add = _addAction](QString text, Fn<void()> callback) {
+			add(std::move(text), std::move(callback), &st::menuIconBotCommands);
+		}, _peer);
 	addTTLSubmenu(true);
 	addSupportInfo();
 	addNewContact();

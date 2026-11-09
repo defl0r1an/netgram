@@ -782,3 +782,412 @@ ayu_* values are based on the upstream Russian translation.
 "lng_netgram_plugins_manager_export" = "Экспортировать установленные плагины";
 
 "lng_netgram_plugins_manager_not_running" = "Включите движок плагинов и перезапустите приложение.";
+
+"lng_netgram_plugins_plugins_runtime_missing" = "Рядом с приложением не найдена среда Python.";
+
+"lng_netgram_plugins_x_guard_analysis" = "Анализ плагина";
+
+"lng_netgram_plugins_x_guard_blocked_before" = "Этот плагин ранее помечен нежелательным по результатам проверки, установка невозможна.";
+
+"lng_netgram_plugins_x_guard_capabilities" = "Возможности";
+
+"lng_netgram_plugins_x_guard_checking" = "Проверка плагина...";
+
+"lng_netgram_plugins_x_guard_checking_about" = "Статические правила, векторная модель и ИИ-арбитр";
+
+"lng_netgram_plugins_x_guard_disabled" = "Плагин отключён и помечен нежелательным.";
+
+"lng_netgram_plugins_x_guard_failed" = "Не удалось проверить плагин.";
+
+"lng_netgram_plugins_x_guard_finding_critical" = "Критично";
+
+"lng_netgram_plugins_x_guard_finding_high" = "Высокий";
+
+"lng_netgram_plugins_x_guard_finding_warning" = "Внимание";
+
+"lng_netgram_plugins_x_guard_install_blocked" = "Установка заблокирована";
+
+"lng_netgram_plugins_x_guard_level_clean" = "угроз нет";
+
+"lng_netgram_plugins_x_guard_level_high" = "критическая угроза";
+
+"lng_netgram_plugins_x_guard_level_low" = "низкий риск";
+
+"lng_netgram_plugins_x_guard_level_medium" = "средний риск";
+
+"lng_netgram_plugins_x_guard_line" = "строка {amount}";
+
+"lng_netgram_plugins_x_guard_llm" = "ИИ-арбитр";
+
+"lng_netgram_plugins_x_guard_llm_confidence" = "Уверенность: {amount}%";
+
+"lng_netgram_plugins_x_guard_llm_error" = "ИИ-арбитр недоступен";
+
+"lng_netgram_plugins_x_guard_llm_malicious" = "Вредоносно";
+
+"lng_netgram_plugins_x_guard_llm_off" = "Не настроен";
+
+"lng_netgram_plugins_x_guard_llm_off_about" = "Сервис и ключ API выбираются в настройках движка плагинов.";
+
+"lng_netgram_plugins_x_guard_llm_safe" = "Безопасно";
+
+"lng_netgram_plugins_x_guard_llm_short" = "ИИ";
+
+"lng_netgram_plugins_x_guard_llm_suspicious" = "Подозрительно";
+
+"lng_netgram_plugins_x_guard_name" = "PluginGuard";
+
+"lng_netgram_plugins_x_guard_network" = "Сетевые адреса";
+
+"lng_netgram_plugins_x_guard_no_model" = "Векторная модель недоступна, применены только статические правила.";
+
+"lng_netgram_plugins_x_guard_report" = "Пожаловаться на плагин";
+
+"lng_netgram_plugins_x_guard_report_admin" = "Вы администратор канала плагинов, поэтому жалобу нельзя отправить в его личные сообщения. Текст жалобы скопирован.";
+
+"lng_netgram_plugins_x_guard_report_author" = "Авторы";
+
+"lng_netgram_plugins_x_guard_report_copied" = "Личные сообщения канала недоступны. Текст жалобы скопирован.";
+
+"lng_netgram_plugins_x_guard_report_failed" = "Не удалось найти канал плагинов.";
+
+"lng_netgram_plugins_x_guard_report_header" = "Жалоба на плагин";
+
+"lng_netgram_plugins_x_guard_report_name" = "Название";
+
+"lng_netgram_plugins_x_guard_report_score" = "Оценка";
+
+"lng_netgram_plugins_x_guard_report_sent" = "Жалоба отправлена.";
+
+"lng_netgram_plugins_x_guard_report_version" = "Версия";
+
+"lng_netgram_plugins_x_guard_result" = "{level} · {score}/100";
+
+"lng_netgram_plugins_x_guard_rule_ai" = "Угроза подтверждена ИИ-арбитром";
+
+"lng_netgram_plugins_x_guard_rule_clipper" = "Подмена адресов кошельков";
+
+"lng_netgram_plugins_x_guard_rule_codes" = "Перехват кодов входа";
+
+"lng_netgram_plugins_x_guard_rule_dynamic" = "Динамическое выполнение кода";
+
+"lng_netgram_plugins_x_guard_rule_exfiltration" = "Отправка данных на сторонние серверы";
+
+"lng_netgram_plugins_x_guard_rule_ip" = "Определение IP-адреса";
+
+"lng_netgram_plugins_x_guard_rule_malware" = "Найдено вредоносных фрагментов: {amount}";
+
+"lng_netgram_plugins_x_guard_rule_obfuscation" = "Обфусцированный код";
+
+"lng_netgram_plugins_x_guard_rule_remote_code" = "Запуск кода, загруженного из сети";
+
+"lng_netgram_plugins_x_guard_rule_session" = "Доступ к данным сессии";
+
+"lng_netgram_plugins_x_guard_rule_similar" = "Сходство с известным вредоносным кодом";
+
+"lng_netgram_plugins_x_guard_rule_system" = "Системные команды и нативный код";
+
+"lng_netgram_plugins_x_guard_run" = "Проверить плагин";
+
+"lng_netgram_plugins_x_guard_threats" = "Угрозы: {amount}";
+
+"lng_netgram_plugins_x_guard_threats_none" = "Угроз не найдено.";
+
+"lng_netgram_plugins_x_guard_vector_anomaly" = "Аномалия";
+
+"lng_netgram_plugins_x_guard_vector_base" = "Векторов в базе: чистых {clean}, вредоносных {malware}";
+
+"lng_netgram_plugins_x_guard_vector_chunks" = "Проверено фрагментов: {amount}, вредоносных: {count_malware}, подозрительных: {count_suspicious}";
+
+"lng_netgram_plugins_x_guard_vector_clean" = "Чисто";
+
+"lng_netgram_plugins_x_guard_vector_malicious" = "Вредонос";
+
+"lng_netgram_plugins_x_guard_vector_malware_sim" = "Макс. сходство с вредоносным: {amount}";
+
+"lng_netgram_plugins_x_guard_vector_short" = "модель";
+
+"lng_netgram_plugins_x_guard_vector_similarity" = "Сходство Top-5: среднее {mean}, мин. {min}";
+
+"lng_netgram_plugins_x_guard_vector_title" = "Векторная модель";
+
+"lng_netgram_plugins_x_guard_vector_unavailable" = "Недоступна";
+
+"lng_netgram_plugins_x_partial_area_cells" = "Ячейки сообщений";
+
+"lng_netgram_plugins_x_partial_area_chat" = "Экран чата";
+
+"lng_netgram_plugins_x_partial_area_data" = "Данные и ограничения клиента";
+
+"lng_netgram_plugins_x_partial_area_dialogs" = "Список чатов";
+
+"lng_netgram_plugins_x_partial_area_input" = "Поле ввода сообщения";
+
+"lng_netgram_plugins_x_partial_area_media" = "Камера, медиа и истории";
+
+"lng_netgram_plugins_x_partial_area_other" = "Другие функции";
+
+"lng_netgram_plugins_x_partial_area_profile" = "Профиль";
+
+"lng_netgram_plugins_x_partial_area_ui" = "Интерфейс Android";
+
+"lng_netgram_plugins_x_partial_why" = "Почему часть функций не работает";
+
+"lng_netgram_plugins_x_partial_works" = "Работает на ПК";
+
+"lng_netgram_plugins_x_partial_works_api" = "Пункты меню, хуки запросов, отправка сообщений и вызовы API Telegram";
+
+"lng_netgram_plugins_x_partial_works_settings" = "Настройки плагина";
+
+"lng_netgram_plugins_x_perm_chip" = "Запрос";
+
+"lng_netgram_plugins_x_perm_domain" = "Домен";
+
+"lng_netgram_plugins_x_perm_folder" = "Папка";
+
+"lng_netgram_plugins_x_perm_request_about" = "Решение можно изменить в настройках плагина, раздел «Разрешения»";
+
+"lng_netgram_plugins_x_perm_request_files" = "Запрос доступа к файлам";
+
+"lng_netgram_plugins_x_perm_request_net" = "Запрос доступа в интернет";
+
+"lng_netgram_plugins_x_plugin_desktop" = "Оптимизировано для netgram";
+
+"lng_netgram_plugins_x_plugin_installing_deps" = "Установка зависимостей";
+
+"lng_netgram_plugins_x_plugin_installing_deps_toast" = "Плагин {name} установлен, зависимости устанавливаются в фоне";
+
+"lng_netgram_plugins_x_plugin_no_settings" = "Настройки у плагина отсутствуют.";
+
+"lng_netgram_plugins_x_plugin_partial" = "Работает частично";
+
+"lng_netgram_plugins_x_plugin_partial_about" = "Плагин изменяет элементы интерфейса Android. Следующие функции в netgram не работают:";
+
+"lng_netgram_plugins_x_plugin_perm_about" = "Доступ в интернет запрашивается для каждого сайта. Доступ к папкам вне папки плагина выдаётся на свой страх и риск.";
+
+"lng_netgram_plugins_x_plugin_perm_allowed" = "Разрешено";
+
+"lng_netgram_plugins_x_plugin_perm_denied" = "Запрещено";
+
+"lng_netgram_plugins_x_plugin_perm_folder" = "Доступ к папке";
+
+"lng_netgram_plugins_x_plugin_perm_none" = "Разрешения не выданы";
+
+"lng_netgram_plugins_x_plugin_perm_reset" = "Сбросить";
+
+"lng_netgram_plugins_x_plugin_perm_reset_all" = "Сбросить все разрешения";
+
+"lng_netgram_plugins_x_plugin_perm_reset_all_sure" = "Сбросить все разрешения плагина? Плагин запросит их повторно.";
+
+"lng_netgram_plugins_x_plugin_perm_revoke_sure" = "Сбросить разрешение для {target}? Плагин запросит его повторно.";
+
+"lng_netgram_plugins_x_plugin_permissions" = "Разрешения";
+
+"lng_netgram_plugins_x_plugin_port" = "Перенести с помощью ИИ";
+
+"lng_netgram_plugins_x_plugin_ported" = "Перенесено с Android при помощи ИИ";
+
+"lng_netgram_plugins_x_plugin_ported_os" = "Перенесено с Android при помощи ИИ для {os}";
+
+"lng_netgram_plugins_x_plugin_reload" = "Перезагрузить";
+
+"lng_netgram_plugins_x_plugin_reloaded" = "Плагин {name} перезагружен";
+
+"lng_netgram_plugins_x_plugin_settings_off" = "Настройки доступны после включения плагина.";
+
+"lng_netgram_plugins_x_plugin_share" = "Поделиться файлом";
+
+"lng_netgram_plugins_x_plugins_dll_failed" = "Не удалось загрузить движок Python (код {code}). Переустановите netgram через установщик или установите Microsoft Visual C++ Redistributable 2015-2022 x64.";
+
+"lng_netgram_plugins_x_port_action" = "Перенести при помощи ИИ";
+
+"lng_netgram_plugins_x_port_advice" = "Рекомендация";
+
+"lng_netgram_plugins_x_port_advice_text" = "Локальные и бесплатные модели часто не справляются с большими плагинами. Лучший результат дают Gemini с бесплатным ключом Google AI Studio или более крупная модель.";
+
+"lng_netgram_plugins_x_port_background" = "Перенос продолжается в фоне";
+
+"lng_netgram_plugins_x_port_bar_done" = "Перенос завершён, открыть результат";
+
+"lng_netgram_plugins_x_port_bar_failed" = "Перенос не выполнен, открыть подробности";
+
+"lng_netgram_plugins_x_port_bar_nothing" = "Перенос не требуется, открыть результат";
+
+"lng_netgram_plugins_x_port_busy" = "Выполняется перенос другого плагина";
+
+"lng_netgram_plugins_x_port_cancel" = "Отменить перенос";
+
+"lng_netgram_plugins_x_port_changed" = "Изменено";
+
+"lng_netgram_plugins_x_port_docs_requested" = "Модель запросила разделы: {list}";
+
+"lng_netgram_plugins_x_port_done" = "Перенос завершён";
+
+"lng_netgram_plugins_x_port_done_about" = "Перенесённый плагин устанавливается отдельно от оригинала и проходит проверку PluginGuard.";
+
+"lng_netgram_plugins_x_port_dropped" = "Не перенесено";
+
+"lng_netgram_plugins_x_port_error_empty" = "Модель вернула пустой ответ.";
+
+"lng_netgram_plugins_x_port_error_format" = "Перенос архивов .elyx не поддерживается.";
+
+"lng_netgram_plugins_x_port_error_limit" = "Запрос превышает лимит тарифа сервиса. Бесплатные тарифы Groq и OpenRouter допускают несколько тысяч токенов на запрос, этого мало для большинства плагинов. Рекомендуются Gemini с бесплатным ключом Google AI Studio или локальная модель.";
+
+"lng_netgram_plugins_x_port_error_size" = "Плагин слишком большой для переноса.";
+
+"lng_netgram_plugins_x_port_failed" = "Перенос не выполнен";
+
+"lng_netgram_plugins_x_port_failed_checks" = "Результат не прошёл проверку:";
+
+"lng_netgram_plugins_x_port_finished_toast" = "Перенос плагина {name} завершён";
+
+"lng_netgram_plugins_x_port_fixed" = "Ошибок возвращено на исправление: {value}";
+
+"lng_netgram_plugins_x_port_hints" = "Подсказки для модели";
+
+"lng_netgram_plugins_x_port_kept" = "Перенесено";
+
+"lng_netgram_plugins_x_port_library" = "Библиотека: идентификатор сохранён, зависимые плагины продолжат работать.";
+
+"lng_netgram_plugins_x_port_local_title" = "Локальная модель";
+
+"lng_netgram_plugins_x_port_minimize" = "Свернуть";
+
+"lng_netgram_plugins_x_port_not_configured" = "Укажите сервис ИИ и ключ API в настройках движка плагинов.";
+
+"lng_netgram_plugins_x_port_nothing" = "Функции плагина работают только в интерфейсе Android. С текущим SDK переносить нечего.";
+
+"lng_netgram_plugins_x_port_nothing_title" = "Переносить нечего";
+
+"lng_netgram_plugins_x_port_open_settings" = "Настройки сервиса";
+
+"lng_netgram_plugins_x_port_provider_anthropic" = "Claude (Anthropic)";
+
+"lng_netgram_plugins_x_port_provider_custom" = "Свой адрес";
+
+"lng_netgram_plugins_x_port_provider_deepseek" = "DeepSeek";
+
+"lng_netgram_plugins_x_port_provider_gemini" = "Gemini (Google)";
+
+"lng_netgram_plugins_x_port_provider_groq" = "Groq";
+
+"lng_netgram_plugins_x_port_provider_lmstudio" = "LM Studio (локально)";
+
+"lng_netgram_plugins_x_port_provider_none" = "Не используется";
+
+"lng_netgram_plugins_x_port_provider_ollama" = "Ollama (локально)";
+
+"lng_netgram_plugins_x_port_provider_openai" = "ChatGPT (OpenAI)";
+
+"lng_netgram_plugins_x_port_provider_openrouter" = "OpenRouter";
+
+"lng_netgram_plugins_x_port_sec" = "{seconds} с";
+
+"lng_netgram_plugins_x_port_service" = "Сервис и модель";
+
+"lng_netgram_plugins_x_port_setup_about" = "Локальные и бесплатные модели лучше справляются с небольшими плагинами. Для крупных плагинов требуется Gemini, Claude или GPT";
+
+"lng_netgram_plugins_x_port_setup_agent" = "Проверка и автоматическое исправление";
+
+"lng_netgram_plugins_x_port_setup_key" = "API-ключ";
+
+"lng_netgram_plugins_x_port_setup_key_empty" = "Не задан";
+
+"lng_netgram_plugins_x_port_setup_key_local" = "Не требуется";
+
+"lng_netgram_plugins_x_port_setup_key_set" = "Задан";
+
+"lng_netgram_plugins_x_port_setup_library" = "Плагин-библиотека: исходный идентификатор сохраняется";
+
+"lng_netgram_plugins_x_port_setup_model" = "Модель";
+
+"lng_netgram_plugins_x_port_setup_model_none" = "Не задана";
+
+"lng_netgram_plugins_x_port_setup_plan" = "Запрос";
+
+"lng_netgram_plugins_x_port_setup_provider" = "Сервис";
+
+"lng_netgram_plugins_x_port_setup_request" = "Запрос к модели";
+
+"lng_netgram_plugins_x_port_setup_service" = "Сервис и модель";
+
+"lng_netgram_plugins_x_port_setup_size" = "Объём запроса: около {value} тыс. токенов";
+
+"lng_netgram_plugins_x_port_setup_start" = "Начать перенос";
+
+"lng_netgram_plugins_x_port_stats" = "Попыток: {attempts}. Время: {time}. Модель: {model}";
+
+"lng_netgram_plugins_x_port_step_active" = "Выполняется";
+
+"lng_netgram_plugins_x_port_step_answered" = "Ответ получен за {time}";
+
+"lng_netgram_plugins_x_port_step_attempt" = "Попытка {attempt} из {total}";
+
+"lng_netgram_plugins_x_port_step_check" = "Проверка результата";
+
+"lng_netgram_plugins_x_port_step_done" = "Готово";
+
+"lng_netgram_plugins_x_port_step_fixing" = "Исправление ошибок";
+
+"lng_netgram_plugins_x_port_step_model" = "Ответ модели";
+
+"lng_netgram_plugins_x_port_step_pending" = "Ожидание";
+
+"lng_netgram_plugins_x_port_step_prepare" = "Подготовка запроса";
+
+"lng_netgram_plugins_x_port_step_prepare_info" = "Подсказок: {hints}. Разделы справочника: {sections}";
+
+"lng_netgram_plugins_x_port_step_waiting_for" = "Ожидание ответа: {time}";
+
+"lng_netgram_plugins_x_port_title" = "Перенос при помощи ИИ";
+
+"lng_netgram_plugins_x_port_warning" = "Качество переноса зависит от модели. Слабые и локальные модели переносят хуже, часть функций может не сохраниться.";
+
+"lng_netgram_plugins_x_unknown_protect_guard" = "PluginGuard проверяет код до установки";
+
+"lng_netgram_plugins_x_unknown_protect_permissions" = "Доступ в интернет и к папкам вне папки плагина запрашивается отдельно";
+
+"lng_netgram_plugins_x_unknown_protect_sandbox" = "Файлы сессии, другие плагины, браузеры и кошельки плагину недоступны";
+
+"lng_netgram_plugins_x_unknown_protect_title" = "Защита netgram";
+
+"lng_netgram_plugins_x_unknown_risk_account" = "Плагин работает от имени вашего аккаунта: читает чаты и отправляет сообщения. Вредоносный плагин может навредить через аккаунт даже при защите netgram.";
+
+"lng_netgram_plugins_x_unknown_risk_check" = "Скачивайте плагины только из официальных источников. Если часть кода зашифрована или нечитаема, не используйте плагин.";
+
+"lng_netgram_plugins_x_unknown_risk_title" = "Риски";
+
+// Local folders.
+"lng_zsg_folders_title" = "Папки netgram";
+"lng_zsg_folders_about" = "Эти папки хранятся на ваших устройствах, их количество не ограничено. Перетащите папку между другими для изменения порядка или на середину другой папки, чтобы вложить её. Правый щелчок открывает дополнительные действия. Подпапки отображаются строкой под вкладками; путь над ними позволяет вернуться назад. Родительская папка показывает чаты всех подпапок. Отключите синхронизацию, чтобы оставить папку только на этом устройстве.";
+"lng_zsg_folders_create" = "Создать папку netgram";
+"lng_zsg_folders_new_title" = "Новая папка";
+"lng_zsg_folders_edit_title" = "Изменить папку";
+"lng_zsg_folders_name" = "Название папки";
+"lng_zsg_folders_icon" = "Значок: любой эмодзи";
+"lng_zsg_folders_color" = "Цвет: любой, в формате #RRGGBB";
+"lng_zsg_folders_sync" = "Синхронизировать с другими устройствами";
+"lng_zsg_folders_local_only" = "только это устройство";
+"lng_zsg_folders_menu_to_top" = "Переместить на верхний уровень";
+"lng_zsg_folders_menu_sync_off" = "Оставить только на этом устройстве";
+"lng_zsg_folders_menu_sync_on" = "Синхронизировать с другими устройствами";
+"lng_zsg_folders_parent" = "Родительская папка";
+"lng_zsg_folders_top_level" = "Верхний уровень";
+"lng_zsg_folders_move_up" = "Переместить выше";
+"lng_zsg_folders_move_down" = "Переместить ниже";
+"lng_zsg_folders_chats" = "Чаты в папке…";
+"lng_zsg_folders_pick_title" = "Чаты в папке";
+"lng_zsg_folders_sync_too_large" = "Папки netgram слишком велики для синхронизации ({size} КБ, предел — {limit} КБ). Отключите синхронизацию некоторых папок.";
+"lng_zsg_folders_sync_flood" = "Telegram ограничивает частоту сохранения папок netgram. Синхронизация продолжится через {seconds} с.";
+"lng_zsg_folders_subfolder" = "Новая подпапка";
+"lng_zsg_folders_delete" = "Удалить папку";
+"lng_zsg_folders_delete_sure" = "Удалить «{name}» со всеми подпапками? Сами чаты удалены не будут.";
+"lng_zsg_folders_chats_count#one" = "{count} чат";
+"lng_zsg_folders_chats_count#few" = "{count} чата";
+"lng_zsg_folders_chats_count#many" = "{count} чатов";
+"lng_zsg_folders_chats_count#other" = "{count} чата";
+"lng_zsg_folders_subfolders_count#one" = "{count} подпапка";
+"lng_zsg_folders_subfolders_count#few" = "{count} подпапки";
+"lng_zsg_folders_subfolders_count#many" = "{count} подпапок";
+"lng_zsg_folders_subfolders_count#other" = "{count} подпапки";
+"lng_zsg_folders_new_sub_title" = "Новая подпапка в «{name}»";
