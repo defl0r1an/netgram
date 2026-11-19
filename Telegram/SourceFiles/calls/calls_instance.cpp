@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "calls/calls_instance.h"
+#include "netgram/plugins/plugins.h"
 
 #include "calls/calls_call.h"
 #include "calls/group/calls_group_common.h"
@@ -205,6 +206,13 @@ void Instance::startOutgoingCall(
 		StartOutgoingCallArgs args) {
 	if (activateCurrentCall()
 		|| (!args.isConfirmed && activateUnconfirmedCall(user))) {
+		return;
+	}
+	if (Netgram::Plugins::InterceptClientEvent(u"start_call"_q, nullptr, {
+			{ u"user_id"_q, double(peerToUser(user->id).bare) },
+			{ u"dialog_id"_q, double(Netgram::Plugins::DialogId(user)) },
+			{ u"video"_q, args.video },
+		})) {
 		return;
 	}
 	if (user->callsStatus() == UserData::CallsStatus::Private) {
@@ -1047,13 +1055,6 @@ std::shared_ptr<tgcalls::VideoCaptureInterface> Instance::getVideoCapture(
 			startDeviceId.toStdString()));
 	_videoCapture = result;
 	return result;
-}
-
-const ConferenceInvites &Instance::conferenceInvites(
-		CallId conferenceId) const {
-	static const auto kEmpty = ConferenceInvites();
-	const auto i = _conferenceInvites.find(conferenceId);
-	return (i != end(_conferenceInvites)) ? i->second : kEmpty;
 }
 
 void Instance::registerConferenceInvite(

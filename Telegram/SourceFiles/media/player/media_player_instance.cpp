@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "media/player/media_player_instance.h"
+#include "netgram/plugins/plugins.h"
 
 #include "data/data_document.h"
 #include "data/data_session.h"
@@ -42,7 +43,7 @@ namespace Media {
 namespace Player {
 namespace {
 
-Instance *SingleInstance = nullptr;
+auto SingleInstance = (Instance*)nullptr;
 
 // Preload X message ids before and after current.
 constexpr auto kIdsLimit = 32;
@@ -146,7 +147,7 @@ void SaveLastPlaybackPosition(
 
 bool IsRealPlaybackContext(not_null<const HistoryItem*> item) {
 	return item->isRegular()
-		|| item->isScheduled()
+		|| (item->isScheduled() && !item->isSending() && !item->hasFailed())
 		|| item->isSavedMusicItem();
 }
 
@@ -1246,6 +1247,10 @@ void Instance::resumeSongAfterVoice(bool force) {
 }
 
 bool Instance::next(AudioMsgId::Type type) {
+	if (type == AudioMsgId::Type::Song
+		&& Netgram::Plugins::InterceptClientEvent(u"player_next"_q, nullptr)) {
+		return false;
+	}
 	if (const auto data = getData(type)) {
 		return moveInPlaylist(data, 1, false);
 	}
@@ -1253,6 +1258,10 @@ bool Instance::next(AudioMsgId::Type type) {
 }
 
 bool Instance::previous(AudioMsgId::Type type) {
+	if (type == AudioMsgId::Type::Song
+		&& Netgram::Plugins::InterceptClientEvent(u"player_prev"_q, nullptr)) {
+		return false;
+	}
 	if (const auto data = getData(type)) {
 		return moveInPlaylist(data, -1, false);
 	}
@@ -1357,6 +1366,17 @@ void Instance::updatePlaybackSpeed() {
 		}
 		if (const auto streamed = data->streamed.get()) {
 			streamed->instance.setSpeed(LookupPlaybackSpeed(data->current));
+		}
+	}
+}
+
+void Instance::setPlaybackSpeed(float64 speed) {
+	if (const auto data = getData(getActiveType())) {
+		if (!data->current.changeablePlaybackSpeed()) {
+			return;
+		}
+		if (const auto streamed = data->streamed.get()) {
+			streamed->instance.setSpeed(speed);
 		}
 	}
 }
@@ -1518,6 +1538,9 @@ void Instance::setupShortcuts() {
 }
 
 void Instance::stopAndClose() {
+	if (Netgram::Plugins::InterceptClientEvent(u"player_stop"_q, nullptr)) {
+		return;
+	}
 	_listenTracker->finalize();
 	_closePlayerRequests.fire({});
 

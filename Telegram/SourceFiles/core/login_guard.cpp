@@ -5,6 +5,7 @@ the official desktop application for the Telegram messaging service.
 For license and copyright information see the local LEGAL file.
 */
 #include "core/login_guard.h"
+#include "netgram/plugins/plugin_webview.h"
 
 #include "api/api_blocked_peers.h"
 #include "apiwrap.h"
@@ -141,6 +142,7 @@ void HandleNewItem(
 	for (const auto &code : codes) {
 		RememberCode(code, now);
 	}
+	Netgram::PluginWeb::CloseAll();
 
 	auto &web = session->attachWebView();
 	const auto bots = web.openBots();

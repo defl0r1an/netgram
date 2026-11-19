@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_element.h"
+#include "netgram/plugins/plugins.h"
 
 #include "apiwrap.h"
 #include "api/api_transcribes.h"
@@ -2216,12 +2217,16 @@ auto Element::contextDependentServiceText() -> TextWithLinks {
 
 void Element::validateText() {
 	const auto clearRichPage = [&] {
-		if (Has<HistoryMessageRichPage>()) {
+		if (const auto rich = richpage()) {
+			const auto heavy = rich->article.hasHeavyPart();
 			ClickHandler::clearActive(this);
 			RemoveComponents(0
 				| HistoryMessageRichPage::Bit()
 				| InstantViewMediaRuntime::Bit());
 			invalidateTextSizeCache();
+			if (heavy) {
+				checkHeavyPart();
+			}
 		}
 	};
 	const auto ensureRichPage = [&](
@@ -2282,6 +2287,7 @@ void Element::validateText() {
 		if (runtime->page == page && runtime->mediaRuntime) {
 			return;
 		}
+		const auto heavy = runtime->article.hasHeavyPart();
 		const auto &layoutSt = st::messageMarkdown;
 		const auto session = &history()->session();
 		const auto richLimits = Iv::ResolveRichMessageLimits(session);
@@ -2299,6 +2305,7 @@ void Element::validateText() {
 			.tableRenderLimits = Iv::Markdown::PrepareTableRenderLimitsForRichMessage(
 				richLimits),
 			.unsupportedBlockNotices = true,
+			.disableButtons = _textItem->hideLinks(),
 		});
 		if (!prepared.supported()) {
 			clearRichPage();
@@ -2306,6 +2313,10 @@ void Element::validateText() {
 				_media = std::make_unique<UnsupportedNotice>(this);
 			}
 			return;
+		}
+		if (prepared.buttonsDisabled) {
+			data()->setHasHiddenLinks(true);
+			_textItem->setHasHiddenLinks(true);
 		}
 		ClickHandler::clearActive(this);
 		runtime->article.setContent(std::move(prepared.content));
@@ -2320,6 +2331,8 @@ void Element::validateText() {
 		runtime->handlerMediaActivation = {};
 		runtime->handlerPlaceholderId = {};
 		runtime->handlerPlaceholderPoint = QPoint();
+		runtime->pressedPlaceholderId = {};
+		runtime->pressedPlaceholderHandler = nullptr;
 		runtime->handlerButtonRow = {};
 		runtime->handlerButtonRowHandler = nullptr;
 		runtime->pressedButtonRow = {};
@@ -2328,6 +2341,9 @@ void Element::validateText() {
 		runtime->handlerInlineButtonHandler = nullptr;
 		runtime->pressedInlineButtonHandler = nullptr;
 		invalidateTextSizeCache();
+		if (heavy) {
+			checkHeavyPart();
+		}
 	};
 	const auto item = data();
 	const auto media = item->media();
@@ -2441,7 +2457,23 @@ void Element::setTextWithLinks(
 		const auto item = data();
 		const auto &options = Ui::ItemTextOptions(item);
 		clearSpecialOnlyEmoji();
-		_text.setMarkedText(st::messageTextStyle, text, options, context);
+		auto shown = std::optional<TextWithEntities>();
+		if (Netgram::Plugins::HasUiHook(u"message_text"_q)) {
+			if (const auto replaced = Netgram::Plugins::UiHookText(
+					u"message_text"_q,
+					item,
+					item->history()->peer,
+					text.text)) {
+				if (*replaced != text.text) {
+					shown = TextWithEntities{ *replaced };
+				}
+			}
+		}
+		_text.setMarkedText(
+			st::messageTextStyle,
+			shown ? *shown : text,
+			options,
+			context);
 		if (!item->_text.empty() && _text.isEmpty()){
 			// If server has allowed some text that we've trim-ed entirely,
 			// just replace it with something so that UI won't look buggy.
@@ -2480,10 +2512,10 @@ void Element::validateInlineKeyboard(HistoryMessageReplyMarkup *markup) {
 		return;
 	}
 	const auto item = data();
-	//if (item->hideLinks()) {
-	//	item->setHasHiddenLinks(true);
-	//	return;
-	//}
+	if (item->hideInlineKeyboard()) {
+		item->setHasHiddenLinks(true);
+		return;
+	}
 	markup->inlineKeyboard = std::make_unique<ReplyKeyboard>(
 		item,
 		std::make_unique<KeyboardStyle>(
@@ -3046,7 +3078,8 @@ bool Element::toggleSelectionByHandlerClick(
 }
 
 bool Element::allowTextSelectionByHandler(
-		const ClickHandlerPtr &handler) const {
+		const ClickHandlerPtr &handler,
+		bool fromTouch) const {
 	return false;
 }
 
@@ -3724,9 +3757,6 @@ auto Element::takeReactionAnimations()
 		return _reactions->takeAnimations();
 	}
 	return {};
-}
-
-void Element::animateUnreadEffect() {
 }
 
 auto Element::takeEffectAnimation()

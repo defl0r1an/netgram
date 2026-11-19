@@ -150,7 +150,8 @@ void SessionMessageHandler::handleReceived() {
 			return _owner->restart();
 		}
 
-		if ((messageLength > kMaxMessageLength)
+		if ((messageLength < kIntSize)
+			|| (messageLength > kMaxMessageLength)
 			|| (messageLength & 0x03)
 			|| (paddingSize < kMinPaddingSize)
 			|| (paddingSize > kMaxPaddingSize)) {
@@ -730,7 +731,7 @@ SessionMessageHandler::HandleResult SessionMessageHandler::handleRpcResult(
 		const mtpPrime *end,
 		uint64 msgId,
 		OuterInfo info) {
-	if (from + 3 > end) {
+	if (end - from < 4) {
 		return HandleResult::ParseError;
 	}
 	auto response = mtpBuffer();

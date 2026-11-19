@@ -6,6 +6,9 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "media/player/media_player_widget.h"
+#include "netgram/plugins/plugins.h"
+#include "styles/style_layers.h"
+#include <QtGui/QContextMenuEvent>
 
 #include "platform/platform_specific.h"
 #include "data/data_document.h"
@@ -40,6 +43,20 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 namespace Media {
 namespace Player {
+
+void Widget::contextMenuEvent(QContextMenuEvent *e) {
+	const auto items = Netgram::Plugins::PlayerMenuItems();
+	if (items.empty()) {
+		return;
+	}
+	_pluginMenu = base::make_unique_q<Ui::PopupMenu>(this, st::popupMenuWithIcons);
+	for (const auto &[id, text] : items) {
+		_pluginMenu->addAction(text, [id] {
+			Netgram::Plugins::PlayerMenuClick(id);
+		});
+	}
+	_pluginMenu->popup(e->globalPos());
+}
 
 Widget::Widget(
 	QWidget *parent,
@@ -76,6 +93,12 @@ Widget::Widget(
 		[=](bool over) { markOver(over); },
 		[=](bool lastNonDefault) { return speedLookup(lastNonDefault); },
 		[=](float64 speed) { saveSpeed(speed); })) {
+	_speedController->setApplySpeed([=](float64 speed) {
+		instance()->setPlaybackSpeed(speed);
+	});
+	shownValue() | rpl::on_next([](bool shown) {
+		Netgram::Plugins::NotifyPlayerShown(shown);
+	}, lifetime());
 	_speedController->realtimeValue(
 	) | rpl::on_next([=](float64 speed) {
 		_speedToggle->setSpeed(speed);

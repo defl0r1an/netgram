@@ -1191,3 +1191,82 @@ ayu_* values are based on the upstream Russian translation.
 "lng_zsg_folders_subfolders_count#many" = "{count} подпапок";
 "lng_zsg_folders_subfolders_count#other" = "{count} подпапки";
 "lng_zsg_folders_new_sub_title" = "Новая подпапка в «{name}»";
+
+"lng_netgram_plugins_x_guard_rule_ai_text" = "Текст, обращённый к ИИ-проверке";
+
+"lng_netgram_plugins_x_guard_rule_binary" = "Встроенный исполняемый файл";
+
+"lng_netgram_plugins_x_guard_rule_decoded" = "Код был зашифрован, проверен после расшифровки";
+
+"lng_netgram_plugins_x_guard_rule_dropper" = "Загрузка и запуск стороннего кода";
+
+"lng_netgram_plugins_x_guard_rule_encoded" = "Закодированные данные";
+
+"lng_netgram_plugins_x_guard_rule_unverified" = "Загрузка из сети кода, недоступного для проверки";
+
+"lng_netgram_plugins_x_leak_browser" = "Данные браузера";
+
+"lng_netgram_plugins_x_leak_code" = "Код входа в Telegram";
+
+"lng_netgram_plugins_x_leak_contacts" = "Номера телефонов контактов";
+
+"lng_netgram_plugins_x_leak_device" = "Аппаратные адреса компьютера";
+
+"lng_netgram_plugins_x_leak_keys" = "Приватные ключи или токены";
+
+"lng_netgram_plugins_x_leak_phone" = "Номер телефона аккаунта";
+
+"lng_netgram_plugins_x_leak_seed" = "Сид-фраза криптокошелька";
+
+"lng_netgram_plugins_x_leak_session" = "Ключи сессии Telegram";
+
+"lng_netgram_plugins_x_leak_tokens" = "Токены ботов или API-ключи";
+
+"lng_netgram_plugins_x_perm_device" = "Устройство";
+
+"lng_netgram_plugins_x_perm_leak_chip" = "Остановлено";
+
+"lng_netgram_plugins_x_perm_leak_text" = "Отправка на {target} остановлена до решения.";
+
+"lng_netgram_plugins_x_perm_request_lan" = "Запрос доступа к локальной сети";
+
+"lng_netgram_plugins_x_perm_request_leak" = "Отправка защищённых данных";
+
+"lng_netgram_plugins_x_perm_request_udp" = "Запрос отправки UDP-пакетов";
+
+"lng_netgram_plugins_x_plugin_journal" = "Журнал";
+
+"lng_netgram_plugins_x_plugin_journal_about" = "Журнал ведётся с момента запуска клиента.";
+
+"lng_netgram_plugins_x_plugin_journal_block" = "Запретить";
+
+"lng_netgram_plugins_x_plugin_journal_block_sure" = "Запретить подключения к {target}?";
+
+"lng_netgram_plugins_x_plugin_journal_conn" = "Подключение к {target}";
+
+"lng_netgram_plugins_x_plugin_journal_empty" = "Записей пока нет.";
+
+"lng_netgram_plugins_x_plugin_journal_native" = "Прямой доступ к системе";
+
+"lng_netgram_plugins_x_plugin_journal_path" = "Доступ к {target}";
+
+"lng_netgram_plugins_x_plugin_journal_process" = "Запуск программы";
+
+"lng_netgram_plugins_x_plugin_journal_registry" = "Чтение реестра: {target}";
+
+"lng_netgram_plugins_x_plugin_perm_clipboard" = "Буфер обмена";
+
+"lng_netgram_plugins_x_plugin_perm_internet" = "Доступ в интернет";
+
+"lng_netgram_plugins_x_plugin_perm_leak" = "{what}: {target}";
+
+"lng_netgram_plugins_x_plugin_perm_links" = "Открытие ссылок без подтверждения";
+
+"lng_netgram_plugins_x_plugin_perm_notify" = "Уведомления";
+
+"lng_netgram_plugins_x_plugin_perm_udp" = "UDP: {target}";
+
+"lng_netgram_plugins_x_plugin_permissions_menu" = "Разрешения и журнал";
+
+"lng_netgram_plugin_web_network" = "Сеть в веб-окнах плагина";
+"lng_netgram_plugin_web_network_about" = "Разрешает веб-окнам загружать сайты и напрямую отправлять данные. Включайте только для доверенного плагина. После изменения разрешения откройте окно заново.";

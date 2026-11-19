@@ -65,6 +65,9 @@ class SandboxTests(unittest.TestCase):
     def test_cannot_connect_to_local_network_without_permission(self):
         self.check_blocked(lambda marker: 'import socket\nsocket.socket().connect(("127.0.0.1", 9))')
 
+    def test_cannot_connect_to_public_network_without_permission(self):
+        self.check_blocked(lambda marker: 'import socket, sys\nsys.audit("socket.connect", socket.socket(), ("203.0.113.1", 443))')
+
     @unittest.skipUnless(sys.platform == 'win32', 'Windows 8.3 path alias')
     def test_short_path_cannot_write_outside_plugin_directory(self):
         self.check_blocked(lambda marker: f'open({marker!r}, "w").write("blocked")', short_path=True)

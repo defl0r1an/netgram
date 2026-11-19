@@ -19,6 +19,7 @@ class LabelSimple;
 class IconButton;
 class PlainShadow;
 class FilledSlider;
+class PopupMenu;
 template <typename Widget>
 class FadeWrap;
 } // namespace Ui
@@ -68,6 +69,7 @@ public:
 private:
 	void resizeEvent(QResizeEvent *e) override;
 	void paintEvent(QPaintEvent *e) override;
+	void contextMenuEvent(QContextMenuEvent *e) override;
 
 	void enterEventHook(QEnterEvent *e) override;
 	void leaveEventHook(QEvent *e) override;
@@ -120,6 +122,7 @@ private:
 
 	const not_null<Window::SessionController*> _controller;
 	const not_null<Ui::RpWidget*> _orderMenuParent;
+	base::unique_qptr<Ui::PopupMenu> _pluginMenu;
 
 	crl::time _seekPositionMs = -1;
 	crl::time _lastDurationMs = 0;

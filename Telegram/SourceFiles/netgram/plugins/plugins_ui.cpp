@@ -1,4 +1,7 @@
 #include "netgram/plugins/plugins_ui.h"
+#include "netgram/plugins/plugin_webview.h"
+
+#include "base/unixtime.h"
 
 #include "apiwrap.h"
 #include "boxes/sticker_set_box.h"
@@ -51,6 +54,7 @@
 #include "ui/wrap/slide_wrap.h"
 #include "netgram/plugins/plugin_config.h"
 #include "base/timer.h"
+#include "settings.h"
 #include "core/click_handler_types.h"
 #include "ui/effects/animations.h"
 #include "ui/boxes/confirm_box.h"
@@ -69,6 +73,7 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QDir>
 #include <QtCore/QRegularExpression>
+#include <QtCore/QCryptographicHash>
 #include <QtCore/QJsonObject>
 
 namespace Netgram::Plugins {
@@ -409,6 +414,163 @@ void ShowPartialBox(
 	ShowPartialStyled(controller, info, items);
 }
 
+[[nodiscard]] QString LeakCategoryTitle(const QString &category) {
+	if (category == u"session"_q) {
+		return tr::lng_netgram_plugins_x_leak_session(tr::now);
+	} else if (category == u"code"_q) {
+		return tr::lng_netgram_plugins_x_leak_code(tr::now);
+	} else if (category == u"phone"_q) {
+		return tr::lng_netgram_plugins_x_leak_phone(tr::now);
+	} else if (category == u"contacts"_q) {
+		return tr::lng_netgram_plugins_x_leak_contacts(tr::now);
+	} else if (category == u"keys"_q) {
+		return tr::lng_netgram_plugins_x_leak_keys(tr::now);
+	} else if (category == u"seed"_q) {
+		return tr::lng_netgram_plugins_x_leak_seed(tr::now);
+	} else if (category == u"browser"_q) {
+		return tr::lng_netgram_plugins_x_leak_browser(tr::now);
+	} else if (category == u"device"_q) {
+		return tr::lng_netgram_plugins_x_leak_device(tr::now);
+	} else if (category == u"tokens"_q) {
+		return tr::lng_netgram_plugins_x_leak_tokens(tr::now);
+	}
+	return category;
+}
+
+void AddPermissionToggle(
+		not_null<Ui::VerticalLayout*> container,
+		rpl::producer<QString> title,
+		bool value,
+		Fn<void(bool)> changed) {
+	const auto button = container->add(object_ptr<Ui::SettingsButton>(
+		container,
+		std::move(title),
+		st::settingsButtonNoIcon));
+	button->toggleOn(rpl::single(value));
+	button->toggledChanges(
+	) | rpl::on_next([=](bool enabled) {
+		changed(enabled);
+	}, button->lifetime());
+}
+
+[[nodiscard]] QString JournalTime(int64 stamp) {
+	const auto parsed = base::unixtime::parse(TimeId(stamp));
+	const auto time = QLocale().toString(parsed.time(), QLocale::ShortFormat);
+	return (parsed.date() == QDate::currentDate())
+		? time
+		: (QLocale().toString(parsed.date(), u"dd.MM"_q) + ' ' + time);
+}
+
+[[nodiscard]] std::vector<QJsonObject> JournalSorted(const QJsonArray &list) {
+	auto result = std::vector<QJsonObject>();
+	for (const auto &entry : list) {
+		result.push_back(entry.toObject());
+	}
+	ranges::sort(result, ranges::greater(), [](const QJsonObject &o) {
+		return o.value(u"last"_q).toDouble();
+	});
+	if (result.size() > 20) {
+		result.resize(20);
+	}
+	return result;
+}
+
+void FillJournal(
+		not_null<Ui::VerticalLayout*> container,
+		not_null<Window::SessionController*> controller,
+		const QString &id,
+		Fn<void()> refresh) {
+	const auto journal = SandboxQuery(u"journal"_q, id).toObject();
+	const auto net = JournalSorted(journal.value(u"net"_q).toArray());
+	const auto files = JournalSorted(journal.value(u"files"_q).toArray());
+	const auto blocked = JournalSorted(
+		journal.value(u"blocked"_q).toArray());
+	Ui::AddSkip(container);
+	Ui::AddSubsectionTitle(container, tr::lng_netgram_plugins_x_plugin_journal());
+	if (net.empty() && files.empty() && blocked.empty()) {
+		container->add(
+			object_ptr<Ui::FlatLabel>(
+				container,
+				tr::lng_netgram_plugins_x_plugin_journal_empty(),
+				st::netgramPluginAbout),
+			st::netgramPluginAboutPadding);
+	}
+	for (const auto &item : net) {
+		const auto key = item.value(u"key"_q).toString();
+		const auto count = int(item.value(u"count"_q).toDouble());
+		const auto last = int64(item.value(u"last"_q).toDouble());
+		const auto button = Settings::AddButtonWithLabel(
+			container,
+			rpl::single(key),
+			rpl::single(QString::number(count)
+				+ QString::fromUtf8(" \xC2\xB7 ")
+				+ JournalTime(last)),
+			st::settingsButtonNoIcon);
+		button->setClickedCallback([=] {
+			controller->show(Ui::MakeConfirmBox({
+				.text = tr::lng_netgram_plugins_x_plugin_journal_block_sure(
+					tr::now,
+					lt_target,
+					key),
+				.confirmed = [=](Fn<void()> close) {
+					SandboxQuery(
+						u"set_rule"_q,
+						id,
+						u"net"_q,
+						key + u"=deny"_q);
+					close();
+					refresh();
+				},
+				.confirmText = tr::lng_netgram_plugins_x_plugin_journal_block(),
+				.confirmStyle = &st::attentionBoxButton,
+			}));
+		});
+	}
+	for (const auto &item : files) {
+		const auto key = item.value(u"key"_q).toString();
+		Settings::AddButtonWithLabel(
+			container,
+			rpl::single(QDir::toNativeSeparators(key)),
+			rpl::single(JournalTime(int64(item.value(u"last"_q).toDouble()))),
+			st::settingsButtonNoIcon);
+	}
+	for (const auto &item : blocked) {
+		const auto key = item.value(u"key"_q).toString();
+		auto text = key;
+		if (key.startsWith(u"leak:"_q)) {
+			text = LeakCategoryTitle(key.section(':', 1, 1))
+				+ u": "_q
+				+ key.section(':', 2);
+		} else if (key.startsWith(u"path:"_q)) {
+			text = tr::lng_netgram_plugins_x_plugin_journal_path(
+				tr::now,
+				lt_target,
+				QDir::toNativeSeparators(key.mid(5)));
+		} else if (key.startsWith(u"net:"_q)) {
+			text = tr::lng_netgram_plugins_x_plugin_journal_conn(
+				tr::now,
+				lt_target,
+				key.mid(4));
+		} else if (key.startsWith(u"registry:"_q)) {
+			text = tr::lng_netgram_plugins_x_plugin_journal_registry(
+				tr::now,
+				lt_target,
+				key.mid(9));
+		} else if (key.startsWith(u"native:"_q)) {
+			text = tr::lng_netgram_plugins_x_plugin_journal_native(tr::now);
+		} else if (key.startsWith(u"process:"_q)) {
+			text = tr::lng_netgram_plugins_x_plugin_journal_process(tr::now);
+		}
+		Settings::AddButtonWithLabel(
+			container,
+			rpl::single(text),
+			rpl::single(JournalTime(int64(item.value(u"last"_q).toDouble()))),
+			st::settingsAttentionButton);
+	}
+	Ui::AddSkip(container);
+	Ui::AddDividerText(container, tr::lng_netgram_plugins_x_plugin_journal_about());
+}
+
 void FillPermissions(
 		not_null<Ui::VerticalLayout*> container,
 		not_null<Window::SessionController*> controller,
@@ -417,17 +579,68 @@ void FillPermissions(
 	const auto permissions = PluginPermissions(id);
 	Ui::AddSkip(container);
 	Ui::AddSubsectionTitle(container, tr::lng_netgram_plugins_x_plugin_permissions());
-	if (!HasPermissions(permissions)) {
-		container->add(
-			object_ptr<Ui::FlatLabel>(
-				container,
-				tr::lng_netgram_plugins_x_plugin_perm_none(),
-				st::netgramPluginAbout),
-			st::netgramPluginAboutPadding);
-		Ui::AddSkip(container);
-		Ui::AddDividerText(container, tr::lng_netgram_plugins_x_plugin_perm_about());
-		return;
+	auto internet = true;
+	auto extra = std::map<QString, QString>();
+	for (const auto &entry : permissions.value(u"net"_q).toArray()) {
+		const auto item = entry.toObject();
+		if (item.value(u"key"_q).toString() == u"*"_q) {
+			internet = (item.value(u"rule"_q).toString() != u"deny"_q);
+		}
 	}
+	for (const auto &entry : permissions.value(u"extra"_q).toArray()) {
+		const auto item = entry.toObject();
+		extra[item.value(u"key"_q).toString()]
+			= item.value(u"rule"_q).toString();
+	}
+	const auto setExtra = [=](const QString &key, const QString &value) {
+		SandboxQuery(u"set_rule"_q, id, u"extra"_q, key + '=' + value);
+		if (key == u"webview"_q) {
+			Netgram::PluginWeb::CloseOwner(id);
+		}
+	};
+	AddPermissionToggle(
+		container,
+		tr::lng_netgram_plugins_x_plugin_perm_internet(),
+		internet,
+		[=](bool enabled) {
+			SandboxQuery(
+				u"set_rule"_q,
+				id,
+				u"net"_q,
+				enabled ? u"*="_q : u"*=deny"_q);
+			if (!enabled) {
+				Netgram::PluginWeb::CloseOwner(id);
+			}
+		});
+	AddPermissionToggle(
+		container,
+		tr::lng_netgram_plugins_x_plugin_perm_clipboard(),
+		extra[u"clipboard"_q] != u"deny"_q,
+		[=](bool enabled) {
+			setExtra(u"clipboard"_q, enabled ? QString() : u"deny"_q);
+		});
+	AddPermissionToggle(
+		container,
+		tr::lng_netgram_plugins_x_plugin_perm_notify(),
+		extra[u"notify"_q] != u"deny"_q,
+		[=](bool enabled) {
+			setExtra(u"notify"_q, enabled ? QString() : u"deny"_q);
+		});
+	AddPermissionToggle(
+		container,
+		tr::lng_netgram_plugins_x_plugin_perm_links(),
+		extra[u"links"_q] == u"allow"_q,
+		[=](bool enabled) {
+			setExtra(u"links"_q, enabled ? u"allow"_q : QString());
+		});
+	AddPermissionToggle(
+		container,
+		tr::lng_netgram_plugin_web_network(),
+		extra[u"webview"_q] == u"allow"_q,
+		[=](bool enabled) {
+			setExtra(u"webview"_q, enabled ? u"allow"_q : QString());
+		});
+	Ui::AddDividerText(container, tr::lng_netgram_plugin_web_network_about());
 	const auto revoke = [=](QString kind, QString key, QString target) {
 		controller->show(Ui::MakeConfirmBox({
 			.text = tr::lng_netgram_plugins_x_plugin_perm_revoke_sure(
@@ -446,16 +659,29 @@ void FillPermissions(
 	for (const auto &entry : permissions.value(u"net"_q).toArray()) {
 		const auto item = entry.toObject();
 		const auto key = item.value(u"key"_q).toString();
+		if (key == u"*"_q) {
+			continue;
+		}
 		const auto allowed = (item.value(u"rule"_q).toString() == u"allow"_q);
+		const auto shown = key.startsWith(u"udp:"_q)
+			? tr::lng_netgram_plugins_x_plugin_perm_udp(tr::now, lt_target, key.mid(4))
+			: key.startsWith(u"leak:"_q)
+			? tr::lng_netgram_plugins_x_plugin_perm_leak(
+				tr::now,
+				lt_what,
+				LeakCategoryTitle(key.mid(5).section('|', 0, 0)),
+				lt_target,
+				key.mid(5).section('|', 1))
+			: key;
 		const auto button = Settings::AddButtonWithLabel(
 			container,
-			rpl::single(key),
+			rpl::single(shown),
 			(allowed
 				? tr::lng_netgram_plugins_x_plugin_perm_allowed()
 				: tr::lng_netgram_plugins_x_plugin_perm_denied()),
 			st::settingsButtonNoIcon);
 		button->setClickedCallback([=] {
-			revoke(u"net"_q, key, key);
+			revoke(u"net"_q, key, shown);
 		});
 	}
 	for (const auto &entry : permissions.value(u"paths"_q).toArray()) {
@@ -472,25 +698,30 @@ void FillPermissions(
 			revoke(u"path"_q, key, shown);
 		});
 	}
-	const auto all = container->add(object_ptr<Ui::SettingsButton>(
-		container,
-		tr::lng_netgram_plugins_x_plugin_perm_reset_all(),
-		st::settingsAttentionButton));
-	all->setClickedCallback([=] {
-		controller->show(Ui::MakeConfirmBox({
-			.text = tr::lng_netgram_plugins_x_plugin_perm_reset_all_sure(),
-			.confirmed = [=](Fn<void()> close) {
-				SandboxQuery(u"revoke"_q, id, u"all"_q);
-				close();
-				refresh();
-				notifyListChanged();
-			},
-			.confirmText = tr::lng_netgram_plugins_x_plugin_perm_reset(),
-			.confirmStyle = &st::attentionBoxButton,
-		}));
-	});
+	if (HasPermissions(permissions)
+		|| !permissions.value(u"extra"_q).toArray().isEmpty()) {
+		const auto all = container->add(object_ptr<Ui::SettingsButton>(
+			container,
+			tr::lng_netgram_plugins_x_plugin_perm_reset_all(),
+			st::settingsAttentionButton));
+		all->setClickedCallback([=] {
+			controller->show(Ui::MakeConfirmBox({
+				.text = tr::lng_netgram_plugins_x_plugin_perm_reset_all_sure(),
+				.confirmed = [=](Fn<void()> close) {
+					SandboxQuery(u"revoke"_q, id, u"all"_q);
+					Netgram::PluginWeb::CloseOwner(id);
+					close();
+					refresh();
+					notifyListChanged();
+				},
+				.confirmText = tr::lng_netgram_plugins_x_plugin_perm_reset(),
+				.confirmStyle = &st::attentionBoxButton,
+			}));
+		});
+	}
 	Ui::AddSkip(container);
 	Ui::AddDividerText(container, tr::lng_netgram_plugins_x_plugin_perm_about());
+	FillJournal(container, controller, id, refresh);
 }
 
 [[nodiscard]] QStringList PinnedPlugins() {
@@ -650,6 +881,44 @@ void SetupLinks(
 	});
 }
 
+[[nodiscard]] QString ExdIconFramePath(const QString &key) {
+	const auto hash = QCryptographicHash::hash(
+		key.toUtf8(),
+		QCryptographicHash::Md5).toHex();
+	return cWorkingDir()
+		+ u"tdata/exd_plugin_icons/"_q
+		+ QString::fromLatin1(hash)
+		+ u".png"_q;
+}
+
+[[nodiscard]] base::flat_map<QString, QImage> &ExdIconFrames() {
+	static auto result = base::flat_map<QString, QImage>();
+	return result;
+}
+
+[[nodiscard]] QImage ExdLoadIconFrame(const QString &key) {
+	auto &frames = ExdIconFrames();
+	if (const auto i = frames.find(key); i != end(frames)) {
+		return i->second;
+	}
+	auto image = QImage(ExdIconFramePath(key));
+	if (!image.isNull()) {
+		image = image.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+		image.setDevicePixelRatio(style::DevicePixelRatio());
+		frames.emplace(key, image);
+	}
+	return image;
+}
+
+void ExdStoreIconFrame(const QString &key, QImage image) {
+	ExdIconFrames()[key] = image;
+	const auto path = ExdIconFramePath(key);
+	crl::async([=] {
+		QDir().mkpath(QFileInfo(path).absolutePath());
+		image.save(path, "PNG");
+	});
+}
+
 void SetupPluginIcon(
 		not_null<Ui::AbstractButton*> widget,
 		not_null<Window::SessionController*> controller,
@@ -664,11 +933,20 @@ void SetupPluginIcon(
 		Ui::Animations::Simple appear;
 		bool failed = false;
 		bool shown = false;
+		bool captured = false;
 	};
 	widget->resize(size, size + badge / 3);
 	const auto state = widget->lifetime().make_state<State>();
 	const auto slash = icon.lastIndexOf('/');
 	state->failed = (slash <= 0);
+	const auto frameKey = icon + u"@"_q + QString::number(size);
+	if (!state->failed) {
+		state->image = ExdLoadIconFrame(frameKey);
+		if (!state->image.isNull()) {
+			state->shown = true;
+			state->captured = true;
+		}
+	}
 	const auto startAppear = [=] {
 		if (state->shown) {
 			return;
@@ -717,6 +995,32 @@ void SetupPluginIcon(
 		const auto emojiReady = state->emoji && state->emoji->ready();
 		if (emojiReady) {
 			startAppear();
+			if (!state->captured) {
+				state->captured = true;
+				const auto ratio = style::DevicePixelRatio();
+				auto frame = QImage(
+					QSize(size, size) * ratio,
+					QImage::Format_ARGB32_Premultiplied);
+				frame.setDevicePixelRatio(ratio);
+				frame.fill(Qt::transparent);
+				{
+					auto q = QPainter(&frame);
+					auto fhq = PainterHighQualityEnabler(q);
+					const auto real = std::max(
+						size,
+						int(st::netgramPluginInstallIcon));
+					q.translate(size / 2., size / 2.);
+					if (real != size) {
+						q.scale(size / float64(real), size / float64(real));
+					}
+					state->emoji->paint(q, {
+						.textColor = st::windowFg->c,
+						.now = crl::now(),
+						.position = QPoint(-real / 2, -real / 2),
+					});
+				}
+				ExdStoreIconFrame(frameKey, frame);
+			}
 		}
 		if (state->failed && state->image.isNull() && !emojiReady) {
 			p.setBrush(st::windowBgActive);
@@ -891,6 +1195,18 @@ void ShowPluginSettings(
 			FillSettings(list, controller, id);
 			list->resizeToWidth(content->width());
 		}, box->lifetime());
+		box->addButton(tr::lng_close(), [=] { box->closeBox(); });
+	}));
+}
+
+void ShowPluginPermissions(
+		not_null<Window::SessionController*> controller,
+		const QString &id,
+		const QString &name) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setTitle(rpl::single(name));
+		box->setWidth(st::boxWideWidth);
+		const auto content = box->verticalLayout();
 		const auto perms = content->add(
 			object_ptr<Ui::VerticalLayout>(content));
 		const auto refreshPerms = box->lifetime().make_state<Fn<void()>>();
@@ -1115,6 +1431,10 @@ void FillPluginsList(
 				raw->addAction(tr::lng_netgram_plugins_x_plugin_view_code(tr::now), [=] {
 					ShowPluginCode(controller, name, path);
 				}, &st::netgramPluginIconOpenCode);
+				raw->addAction(
+					tr::lng_netgram_plugins_x_plugin_permissions_menu(tr::now),
+					[=] { ShowPluginPermissions(controller, id, name); },
+					&st::menuIconLock);
 				if (guard) {
 					raw->addAction(tr::lng_netgram_plugins_x_guard_run(tr::now), [=] {
 						RunGuard(controller, path, id);
@@ -2433,8 +2753,9 @@ void ShowGuardAnalysis(
 			const auto row = threats->add(
 				object_ptr<Ui::VerticalLayout>(threats),
 				QMargins(st::netgramPluginInstallCardPadding.left(), 6, st::netgramPluginInstallCardPadding.left(), 0));
-			const auto head = row->add(
-				object_ptr<Ui::FixedHeightWidget>(row, style::ConvertScale(26)));
+			const auto base = style::ConvertScale(26);
+			const auto head = row->add(object_ptr<Ui::RpWidget>(row));
+			head->resize(head->width(), base);
 			const auto chip = Ui::CreateChild<GuardChip>(
 				head,
 				FindingLevelTitle(finding.level),
@@ -2444,10 +2765,16 @@ void ShowGuardAnalysis(
 				RuleTitle(finding.rule),
 				st::netgramPluginThreatTitle);
 			head->widthValue() | rpl::on_next([=](int width) {
-				chip->moveToLeft(0, (head->height() - chip->height()) / 2, width);
 				const auto left = chip->width() + 8;
-				title->resizeToWidth(width - left);
-				title->moveToLeft(left, (head->height() - title->height()) / 2, width);
+				title->resizeToWidth(std::max(width - left, 1));
+				const auto line = st::netgramPluginThreatTitle.style.font->height;
+				const auto top = (base - line) / 2;
+				chip->moveToLeft(0, (base - chip->height()) / 2, width);
+				title->moveToLeft(left, top, width);
+				const auto height = std::max(base, top + title->height() + top);
+				if (head->height() != height) {
+					head->resize(width, height);
+				}
 			}, head->lifetime());
 			auto details = finding.detail;
 			if (finding.line > 0) {
@@ -2887,9 +3214,14 @@ void PaintPuzzle(QPainter &p, QRectF rect, QColor color) {
 void ShowSourceBox(
 		not_null<Window::SessionController*> controller,
 		const QString &path) {
-	const auto source = Call(u"source"_q, QJsonObject{
+	auto source = Call(u"guard_preview"_q, QJsonObject{
 		{ u"path"_q, path },
 	}).toString();
+	if (source.isEmpty()) {
+		source = Call(u"source"_q, QJsonObject{
+			{ u"path"_q, path },
+		}).toString();
+	}
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setTitle(rpl::single(QFileInfo(path).fileName()));
 		box->setWidth(st::boxWideWidth * 3 / 2);
@@ -3571,7 +3903,7 @@ void ShowPortResult(
 			AddColorPill(
 				box,
 				tr::lng_netgram_plugins_x_plugin_ported_os(tr::now, lt_os, DesktopOsName(QString())),
-				st::netgramPluginInstallPuzzle,
+				st::netgramPluginInstallTranslate,
 				[] { return st::boxTextFgGood->c; });
 			AddGuardCard(
 				box,
@@ -4151,7 +4483,7 @@ void ShowPortSetupBox(
 		AddColorPill(
 			box,
 			tr::lng_netgram_plugins_x_plugin_ported_os(tr::now, lt_os, DesktopOsName(QString())),
-			st::netgramPluginInstallPuzzle,
+			st::netgramPluginInstallTranslate,
 			[] { return st::windowActiveTextFg->c; });
 
 		box->addRow(
@@ -4341,10 +4673,16 @@ void ShowPermissionAlert(
 		const QJsonObject &data,
 		Fn<void(QJsonValue)> answer) {
 	const auto extra = data.value(u"exd"_q).toObject();
-	const auto net = (extra.value(u"kind"_q).toString() == u"net"_q);
+	const auto kind = extra.value(u"kind"_q).toString();
+	const auto net = (kind == u"net"_q) || (kind == u"udp"_q);
+	const auto leak = (kind == u"leak"_q);
 	const auto plugin = extra.value(u"plugin"_q).toString();
 	const auto target = extra.value(u"target"_q).toString();
-	const auto message = data.value(u"message"_q).toString();
+	const auto leakCategory = target.section('|', 0, 0);
+	const auto leakTarget = target.section('|', 1);
+	const auto message = leak
+		? tr::lng_netgram_plugins_x_perm_leak_text(tr::now, lt_target, leakTarget)
+		: data.value(u"message"_q).toString();
 	auto meta = QJsonObject();
 	for (const auto &entry : Call(u"list"_q).toArray()) {
 		const auto info = entry.toObject();
@@ -4358,7 +4696,7 @@ void ShowPermissionAlert(
 	}
 	auto ordered = std::vector<std::pair<int, QString>>();
 	const auto buttons = data.value(u"buttons"_q).toArray();
-	for (const auto which : { -1, -3, -2 }) {
+	for (const auto which : { -1, -3, -4, -2 }) {
 		for (const auto &value : buttons) {
 			const auto entry = value.toObject();
 			if (entry.value(u"which"_q).toInt() == which) {
@@ -4369,14 +4707,20 @@ void ShowPermissionAlert(
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		AddPortHeader(box, controller, meta);
 		const auto color = [=] {
-			return net
+			return leak
+				? st::attentionButtonFg->c
+				: net
 				? st::windowActiveTextFg->c
 				: st::historyPeer3UserpicBg->c;
 		};
 		AddColorPill(
 			box,
-			net
-				? tr::lng_netgram_plugins_x_perm_request_net(tr::now)
+			leak
+				? tr::lng_netgram_plugins_x_perm_request_leak(tr::now)
+				: (kind == u"udp"_q)
+				? tr::lng_netgram_plugins_x_perm_request_udp(tr::now)
+				: net
+				? tr::lng_netgram_plugins_x_perm_request_lan(tr::now)
 				: tr::lng_netgram_plugins_x_perm_request_files(tr::now),
 			st::netgramPluginInstallPuzzle,
 			color);
@@ -4384,13 +4728,21 @@ void ShowPermissionAlert(
 		Ui::AddSkip(card, 6);
 		AddPortStep(
 			card,
-			net
-				? tr::lng_netgram_plugins_x_perm_domain(tr::now)
+			leak
+				? LeakCategoryTitle(leakCategory)
+				: net
+				? tr::lng_netgram_plugins_x_perm_device(tr::now)
 				: tr::lng_netgram_plugins_x_perm_folder(tr::now),
-			tr::lng_netgram_plugins_x_perm_chip(tr::now),
+			leak
+				? tr::lng_netgram_plugins_x_perm_leak_chip(tr::now)
+				: tr::lng_netgram_plugins_x_perm_chip(tr::now),
 			color(),
 			{
-				net ? target : QDir::toNativeSeparators(target),
+				leak
+					? leakTarget
+					: net
+					? (target.startsWith(u"udp:"_q) ? target.mid(4) : target)
+					: QDir::toNativeSeparators(target),
 				message,
 			});
 		Ui::AddSkip(card, 8);

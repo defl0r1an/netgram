@@ -70,6 +70,12 @@ void InsertPollVoteRestrictionsLabel(
 	not_null<HistoryItem*> item,
 	not_null<PollData*> poll);
 
+void AddPostLinkAction(
+	not_null<Ui::PopupMenu*> menu,
+	not_null<Window::SessionController*> controller,
+	not_null<HistoryItem*> item,
+	Context context);
+
 void CopyPostLink(
 	not_null<Window::SessionController*> controller,
 	FullMsgId itemId,
@@ -146,7 +152,6 @@ void AddCopyFilename(
 enum class EmojiPacksSource {
 	Message,
 	Reaction,
-	Reactions,
 	Tag,
 	PollOption,
 };

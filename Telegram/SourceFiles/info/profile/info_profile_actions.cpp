@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "info/profile/info_profile_actions.h"
+#include "netgram/plugins/plugins.h"
 
 #include "api/api_blocked_peers.h"
 #include "api/api_chat_participants.h"
@@ -55,6 +56,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history_item.h"
 #include "history/history_item_components.h"
 #include "history/history_item_helpers.h"
+#include "history/history_location_manager.h"
 #include "history/view/history_view_item_preview.h"
 #include "history/view/reactions/history_view_reactions_list.h"
 #include "info/bot/earn/info_bot_earn_widget.h"
@@ -1587,6 +1589,31 @@ Section DetailsFiller::makeInfo() {
 		});
 	};
 
+	auto exdRows = QJsonArray();
+	if (!_topic && Netgram::Plugins::Started()) {
+		const auto user = _peer->asUser();
+		const auto phone = user ? user->phone() : QString();
+		const auto username = _peer->username();
+		exdRows = Netgram::Plugins::ProfileRows(
+			Netgram::Plugins::DialogId(_peer),
+			phone.isEmpty() ? QString() : (u"+"_q + phone),
+			username.isEmpty() ? QString() : (u"@"_q + username),
+			_peer->about());
+	}
+	const auto exdText = [=](
+			const QString &kind,
+			rpl::producer<TextWithEntities> &&text)
+	-> rpl::producer<TextWithEntities> {
+		for (const auto &value : exdRows) {
+			const auto row = value.toObject();
+			if (row.value(u"kind"_q).toString() == kind) {
+				return rpl::single(
+					TextWithEntities{ row.value(u"text"_q).toString() });
+			}
+		}
+		return std::move(text);
+	};
+
 	const auto addInfoLineGeneric = [&](
 			v::text::data &&label,
 			rpl::producer<TextWithEntities> &&text,
@@ -1733,7 +1760,7 @@ Section DetailsFiller::makeInfo() {
 
 		const auto phoneLine = addInfoOneLine(
 			tr::lng_info_mobile_label(),
-			PhoneWithSpoilerValue(user, PhoneOrHiddenValue(user)),
+			exdText(u"phone"_q, PhoneWithSpoilerValue(user, PhoneOrHiddenValue(user))),
 			tr::lng_profile_copy_phone(tr::now),
 			st::infoProfileLabeledPadding,
 			st::popupMenuWithIcons);
@@ -1761,16 +1788,16 @@ Section DetailsFiller::makeInfo() {
 			: tr::lng_info_bio_label();
 		const auto about = addInfoLine(
 			std::move(label),
-			AboutWithAdvancedValue(user));
+			exdText(u"bio"_q, AboutWithAdvancedValue(user)));
 		setupAboutContextMenu(about.text, AboutWithAdvancedValue(user));
 
 		const auto usernameLine = addInfoOneLine(
 			UsernamesSubtext(_peer, tr::lng_info_username_label()),
-			UsernameValue(user, true) | rpl::map([=](TextWithEntities u) {
+			exdText(u"username"_q, UsernameValue(user, true) | rpl::map([=](TextWithEntities u) {
 				return u.text.isEmpty()
 					? TextWithEntities()
 					: tr::link(u, UsernameUrl(user, u.text.mid(1)));
-			}),
+			})),
 			QString(),
 			st::infoProfileLabeledUsernamePadding);
 		const auto callback = UsernamesLinkCallback(
@@ -1969,7 +1996,7 @@ Section DetailsFiller::makeInfo() {
 
 		const auto about = addInfoLine(tr::lng_info_about_label(), _topic
 			? rpl::single(TextWithEntities())
-			: AboutWithAdvancedValue(_peer));
+			: exdText(u"bio"_q, AboutWithAdvancedValue(_peer)));
 		if (!_topic) {
 			setupAboutContextMenu(about.text, AboutWithAdvancedValue(_peer));
 		}
@@ -2025,6 +2052,17 @@ Section DetailsFiller::makeInfo() {
 				return false;
 			});
 		}
+	}
+	for (const auto &value : exdRows) {
+		const auto row = value.toObject();
+		if (row.value(u"kind"_q).toString() != u"add"_q) {
+			continue;
+		}
+		const auto text = row.value(u"text"_q).toString();
+		addInfoOneLine(
+			rpl::single(row.value(u"value"_q).toString()),
+			rpl::single(TextWithEntities{ text }),
+			text);
 	}
 	raw->toggleOn(tracker.atLeastOneShownValue());
 	raw->finishAnimating();
@@ -2423,12 +2461,16 @@ void DetailsFiller::addMainApp(not_null<UserData*> user) {
 		}
 		return text;
 	});
-	auto setup = [url](not_null<Ui::FlatLabel*> label) {
+	auto setup = [url, controller](not_null<Ui::FlatLabel*> label) {
 		label->setClickHandlerFilter([=](
 				const ClickHandlerPtr &link,
 				Qt::MouseButton) {
 			if (link && link->url() == url) {
-				UrlClickHandler::Open(url);
+				HiddenUrlClickHandler::OpenTranslated(
+					tr::lng_mini_apps_tos_url,
+					QVariant::fromValue(ClickHandlerContext{
+						.sessionWindow = controller,
+					}));
 				return false;
 			}
 			return true;
@@ -2885,9 +2927,7 @@ Section DetailsFiller::makeTopicsList(not_null<Data::Forum*> forum) {
 	raw->toggleOn(rpl::duplicate(showTopicsVisible));
 	AddMainButton(
 		raw->entity(),
-		(forum->peer()->isBot()
-			? tr::lng_bot_show_threads_list()
-			: tr::lng_forum_show_topics_list()),
+		tr::lng_forum_show_topics_list(),
 		std::move(showTopicsVisible),
 		callback,
 		nullptr,
@@ -3212,7 +3252,10 @@ void ActionsFiller::addBotCommandActions(not_null<UserData*> user) {
 			}
 		}
 		if (!sendBotCommand(u"privacy"_q)) {
-			openUrl(tr::lng_profile_bot_privacy_url(tr::now));
+			HiddenUrlClickHandler::OpenTranslatedWithIv(
+				&user->session(),
+				tr::lng_profile_bot_privacy_url,
+				makeOtherContext());
 		}
 	};
 	AddActionButton(

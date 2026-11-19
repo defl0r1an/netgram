@@ -873,6 +873,8 @@ netgramPluginInstallShield: icon {{ "menu/exd_warning-20x20", windowFg }};
 
 netgramPluginInstallPuzzle: icon {{ "menu/exd_puzzle-20x20", windowFg }};
 
+netgramPluginInstallTranslate: icon {{ "menu/translate", windowFg }};
+
 netgramPluginInstallPillFont: font(14px semibold);
 
 netgramPluginInstallPillHeight: 32px;

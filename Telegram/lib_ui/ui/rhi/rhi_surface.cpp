@@ -89,6 +89,9 @@ SurfaceRhi::~SurfaceRhi() {
 }
 
 void SurfaceRhi::initialize(QRhiCommandBuffer *cb) {
+	if (!cb || !rhi() || rhi()->isDeviceLost() || !renderTarget()) {
+		return;
+	}
 	if (const auto use = rhi()) {
 		[[maybe_unused]] static const auto logged = [&] {
 			LOG(("QRhi: Surface backend=%1 device=%2."
@@ -103,6 +106,9 @@ void SurfaceRhi::initialize(QRhiCommandBuffer *cb) {
 }
 
 void SurfaceRhi::render(QRhiCommandBuffer *cb) {
+	if (!cb || !rhi() || rhi()->isDeviceLost() || !renderTarget()) {
+		return;
+	}
 	const auto rt = renderTarget();
 	if (!updatesEnabled() || size().isEmpty()) {
 		// The color texture is composited into the window even when the

@@ -1,3 +1,9 @@
+7.4.4 (netgram)
+
+- Updated Telegram Desktop base to 7.4.4.
+- Expanded Python plugin hooks, Android widgets and profile/player integration.
+- Preserved explicit network permissions and canonical-path access checks.
+
 7.3.4 (netgram)
 
 - Updated plugin compatibility, access permissions and local plugin scanning.

@@ -122,6 +122,45 @@ class Virtual(BasePlugin):
         self.call('set_enabled', id='test_virtual', enabled=False)
         self.assertEqual(self.call('send_hook', peer=123, text='hello')['strategy'], 'default')
 
+    def test_xposed_priority_and_reverse_after_order(self):
+        import exd_xposed
+        events = []
+
+        def hook(label):
+            return types.SimpleNamespace(
+                before_hooked_method=lambda param: events.append(label + ':before'),
+                after_hooked_method=lambda param: events.append(label + ':after'))
+
+        entries = [
+            {'handler': hook('low'), 'priority': 10},
+            {'handler': hook('high'), 'priority': 100}]
+
+        def original(param):
+            events.append('original')
+            return 42
+
+        self.assertEqual(exd_xposed.run(entries, exd_xposed.MethodHookParam(), original), 42)
+        self.assertEqual(events, ['high:before', 'low:before', 'original', 'low:after', 'high:after'])
+
+    def test_xposed_early_result_cancels_original_and_lower_hooks(self):
+        import exd_xposed
+        events = []
+
+        def cancel(param):
+            events.append('cancel')
+            param.setResult(7)
+
+        entries = [
+            {'handler': types.SimpleNamespace(
+                before_hooked_method=lambda param: events.append('lower')), 'priority': 10},
+            {'handler': types.SimpleNamespace(
+                before_hooked_method=cancel,
+                after_hooked_method=lambda param: events.append('after')), 'priority': 100}]
+        value = exd_xposed.run(entries, exd_xposed.MethodHookParam(),
+                               lambda param: events.append('original'))
+        self.assertEqual(value, 7)
+        self.assertEqual(events, ['cancel', 'after'])
+
     def test_elyx_metadata_and_archive_path_traversal(self):
         import exd_elyx
         path = self.root/'test.elyx'

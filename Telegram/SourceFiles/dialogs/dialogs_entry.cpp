@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/dialogs_entry.h"
+#include "netgram/plugins/plugins.h"
 
 #include "dialogs/dialogs_key.h"
 #include "dialogs/dialogs_indexed_list.h"
@@ -330,11 +331,24 @@ void Entry::notifyUnreadStateChange(const UnreadState &wasState) {
 
 const Ui::Text::String &Entry::chatListNameText() const {
 	const auto version = chatListNameVersion();
-	if (_chatListNameVersion < version) {
+	const auto generation = Netgram::Plugins::UiHookGeneration();
+	if (_chatListNameVersion < version || _pluginHookGeneration != generation) {
 		_chatListNameVersion = version;
+		_pluginHookGeneration = generation;
+		auto name = chatListName();
+		const auto history = asHistory();
+		if (history && Netgram::Plugins::HasUiHook(u"dialog_name"_q)) {
+			if (const auto replaced = Netgram::Plugins::UiHookText(
+					u"dialog_name"_q,
+					nullptr,
+					history->peer,
+					name)) {
+				name = *replaced;
+			}
+		}
 		_chatListNameText.setText(
 			st::semiboldTextStyle,
-			chatListName(),
+			name,
 			Ui::NameTextOptions());
 	}
 	return _chatListNameText;

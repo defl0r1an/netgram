@@ -924,8 +924,22 @@ void HttpChecker::request(const QUrl &url, ResponseType type) {
 		request.setRawHeader("Accept", "application/vnd.github+json");
 		request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
 	}
+	// Enforce response limits for HTTP/2 as well.
+	request.setAttribute(QNetworkRequest::Http2AllowedAttribute, false);
 	_manager = std::make_unique<QNetworkAccessManager>();
 	_reply = _manager->get(request);
+	_reply->setReadBufferSize(kMaxResponseSize);
+	_reply->connect(_reply, &QNetworkReply::readyRead, [=, queued = false]() mutable {
+		if (!_reply
+			|| queued
+			|| _reply->bytesAvailable() < kMaxResponseSize) {
+			return;
+		}
+		queued = true;
+		crl::on_main(this, [=] {
+			gotResponse();
+		});
+	});
 	_reply->connect(_reply, &QNetworkReply::finished, [=] {
 		gotResponse();
 	});
@@ -940,7 +954,11 @@ void HttpChecker::gotResponse() {
 	}
 
 	cSetLastUpdateCheck(base::unixtime::now());
-	const auto response = _reply->readAll();
+	const auto weak = base::make_weak(this);
+	const auto response = _reply->read(kMaxResponseSize);
+	if (!weak) {
+		return;
+	}
 	const auto responseType = _responseType;
 	clearSentRequest();
 
@@ -1057,8 +1075,9 @@ void HttpChecker::clearSentRequest() {
 	reply->disconnect(reply, &QNetworkReply::finished, nullptr, nullptr);
 	reply->disconnect(reply, &QNetworkReply::errorOccurred, nullptr, nullptr);
 	reply->abort();
+	reply->disconnect();
 	reply->deleteLater();
-	_manager = nullptr;
+	_manager.release()->deleteLater();
 }
 
 void HttpChecker::gotFailure(QNetworkReply::NetworkError e) {

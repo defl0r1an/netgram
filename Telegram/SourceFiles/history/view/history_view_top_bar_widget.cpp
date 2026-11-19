@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_top_bar_widget.h"
+#include "netgram/plugins/plugins.h"
 
 #include "history/history.h"
 #include "history/view/history_view_send_action.h"
@@ -43,6 +44,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/controls/button_context_menu.h"
 #include "ui/ui_utility.h"
 #include "window/window_adaptive.h"
+#include "window/window_columns.h"
 #include "window/window_session_controller.h"
 #include "window/window_peer_menu.h"
 #include "calls/calls_instance.h"
@@ -252,8 +254,9 @@ TopBarWidget::TopBarWidget(
 		| UpdateFlag::Rights
 		| UpdateFlag::EmojiStatus
 		| UpdateFlag::Name
+		| UpdateFlag::BarSettings
 	) | rpl::on_next([=](const Data::PeerUpdate &update) {
-		if ((update.flags & UpdateFlag::Name)
+		if ((update.flags & (UpdateFlag::Name | UpdateFlag::BarSettings))
 			&& (update.peer == titleNamePeer())) {
 			TopBarWidget::update();
 		}
@@ -284,8 +287,8 @@ TopBarWidget::TopBarWidget(
 	}, lifetime());
 
 	rpl::combine(
-		Core::App().settings().thirdSectionInfoEnabledValue(),
-		Core::App().settings().tabbedReplacedWithInfoValue()
+		_controller->columns().thirdSectionInfoEnabledValue(),
+		_controller->columns().tabbedReplacedWithInfoValue()
 	) | rpl::on_next([=] {
 		updateInfoToggleActive();
 	}, lifetime());
@@ -505,12 +508,12 @@ void TopBarWidget::showCallMenu() {
 void TopBarWidget::toggleInfoSection() {
 	const auto isThreeColumn = _controller->adaptive().isThreeColumn();
 	if (isThreeColumn
-		&& (Core::App().settings().thirdSectionInfoEnabled()
-			|| Core::App().settings().tabbedReplacedWithInfo())) {
+		&& (_controller->columns().thirdSectionInfoEnabled()
+			|| _controller->columns().tabbedReplacedWithInfo())) {
 		_controller->closeThirdSection();
 	} else if (_activeChat.key.peer()) {
 		if (_controller->canShowThirdSection()) {
-			Core::App().settings().setThirdSectionInfoEnabled(true);
+			_controller->columns().setThirdSectionInfoEnabled(true);
 			Core::App().saveSettingsDelayed();
 			if (isThreeColumn) {
 				_controller->showSection(
@@ -702,9 +705,19 @@ void TopBarWidget::paintTopBar(Painter &p) {
 	} else if (namePeer) {
 		if (_titleNameVersion < namePeer->nameVersion()) {
 			_titleNameVersion = namePeer->nameVersion();
+			auto titleText = TopBarNameText(namePeer, _activeChat);
+			if (Netgram::Plugins::HasUiHook(u"chat_title"_q)) {
+				if (const auto replaced = Netgram::Plugins::UiHookText(
+						u"chat_title"_q,
+						nullptr,
+						namePeer,
+						titleText)) {
+					titleText = *replaced;
+				}
+			}
 			_title.setText(
 				st::msgNameStyle,
-				TopBarNameText(namePeer, _activeChat),
+				titleText,
 				Ui::NameTextOptions());
 		}
 		if (const auto info = namePeer->botVerifyDetails()) {
@@ -894,6 +907,11 @@ void TopBarWidget::infoClicked() {
 	const auto key = _activeChat.key;
 	if (!key) {
 		return;
+	} else if (key.peer() && Netgram::Plugins::InterceptClientEvent(
+			u"avatar_click"_q,
+			nullptr,
+			{ { u"dialog_id"_q, double(Netgram::Plugins::DialogId(key.peer())) } })) {
+		return;
 	} else if (const auto topic = key.topic()) {
 		_controller->showSection(std::make_shared<Info::Memento>(topic));
 	} else if (const auto sublist = key.sublist()) {
@@ -1003,6 +1021,13 @@ void TopBarWidget::setActiveChat(
 			) | rpl::on_next([=](const QString &name) {
 				_titlePeerText.setText(st::dialogsTextStyle, name);
 				_titlePeerTextOnline = false;
+				update();
+			}, _activeChatLifetime);
+
+			session().changes().topicUpdates(
+				topic,
+				Data::TopicUpdate::Flag::Title
+			) | rpl::on_next([=] {
 				update();
 			}, _activeChatLifetime);
 
@@ -1408,10 +1433,13 @@ void TopBarWidget::updateControlsVisibility() {
 
 
 	const auto isOneColumn = _controller->adaptive().isOneColumn();
+
+	// MainWidget is already gone while the window clears its widgets.
+	const auto main = _controller->widget()->sessionContent();
 	const auto backVisible = !rootChatsListBar()
 		&& (isOneColumn
 			|| (_activeChat.section == Section::ChatsList)
-			|| !_controller->content()->stackIsEmpty());
+			|| (main && !main->stackIsEmpty()));
 	_back->setVisible(backVisible && !_chooseForReportReason);
 	_cancelChoose->setVisible(_chooseForReportReason.has_value());
 	updateInfoButtonVisibility();
@@ -1957,8 +1985,8 @@ void TopBarWidget::updateUnreadBadge() {
 
 void TopBarWidget::updateInfoToggleActive() {
 	auto infoThirdActive = _controller->adaptive().isThreeColumn()
-		&& (Core::App().settings().thirdSectionInfoEnabled()
-			|| Core::App().settings().tabbedReplacedWithInfo());
+		&& (_controller->columns().thirdSectionInfoEnabled()
+			|| _controller->columns().tabbedReplacedWithInfo());
 	auto iconOverride = infoThirdActive
 		? &st::topBarInfoActive
 		: nullptr;
@@ -2118,6 +2146,15 @@ void TopBarWidget::updateOnlineDisplay() {
 
 		} else {
 			text = channel->isMegagroup() ? tr::lng_group_status(tr::now) : tr::lng_channel_status(tr::now);
+		}
+	}
+	if (Netgram::Plugins::HasUiHook(u"chat_subtitle"_q)) {
+		if (const auto replaced = Netgram::Plugins::UiHookText(
+				u"chat_subtitle"_q,
+				nullptr,
+				peer,
+				text)) {
+			text = *replaced;
 		}
 	}
 	if (_titlePeerText.toString() != text) {

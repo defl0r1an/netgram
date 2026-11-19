@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_transcribe_button.h"
+#include "netgram/plugins/plugins.h"
 
 #include "base/unixtime.h"
 #include "boxes/premium_preview_box.h"
@@ -376,6 +377,9 @@ ClickHandlerPtr TranscribeButton::link() {
 	_link = std::make_shared<LambdaClickHandler>([=](ClickContext context) {
 		const auto item = session->data().message(id);
 		if (!item) {
+			return;
+		}
+		if (Netgram::Plugins::InterceptClientEvent(u"transcribe"_q, item)) {
 			return;
 		}
 		if (session->premium()) {

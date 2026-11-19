@@ -53,6 +53,10 @@ Go to ***BuildPath*\\tdesktop\\Telegram** and run
 
     configure.bat x64 -D TDESKTOP_API_ID=2040 -D TDESKTOP_API_HASH=b18441a1ff607e10a989891a5462e627
 
+For `winarm` (ARM64):
+
+    configure.bat arm -T version=%VCToolsVersion% -D TDESKTOP_API_ID=YOUR_API_ID -D TDESKTOP_API_HASH=YOUR_API_HASH
+
 * Open ***BuildPath*\\tdesktop\\out\\Telegram.slnx** in Visual Studio 2026
 * Select Telegram project and press Build > Build Telegram (Debug and Release configurations)
 * The result netgram.exe will be located in **D:\TBuild\tdesktop\out\Debug** (and **Release**)

@@ -24,6 +24,7 @@ constexpr auto kSaveDelay = crl::time(1000);
 		{ u"guard_model_version"_q, QString() },
 		{ u"plugins_guard_blocked"_q, QString() },
 		{ u"plugins_no_auto_safe"_q, false },
+		{ u"plugins_dev_server"_q, false },
 		{ u"plugins_enabled"_q, true },
 		{ u"plugins_pinned"_q, QString() },
 		{ u"plugins_developer_mode"_q, false },
