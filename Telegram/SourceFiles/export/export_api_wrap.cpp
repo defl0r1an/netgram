@@ -1819,7 +1819,6 @@ void ApiWrap::requestMessagesCount(int localSplitIndex) {
 	requestChatMessages(
 		_chatProcess->info.splits[localSplitIndex],
 		0, // offset_id
-		0, // offset_date
 		0, // add_offset
 		1, // limit
 		[=](const MTPmessages_Messages &result) {
@@ -2240,16 +2239,9 @@ void ApiWrap::requestMessagesSlice() {
 		startMessagesSlice({});
 		return;
 	}
-	// Start from the requested date, messages sent exactly
-	// at offset_date are skipped as older ones.
-	const auto offsetDate = (_chatProcess->largestIdPlusOne == 1
-		&& _settings->singlePeerFrom > 0)
-		? (_settings->singlePeerFrom - 1)
-		: 0;
 	requestChatMessages(
 		_chatProcess->info.splits[_chatProcess->localSplitIndex],
 		_chatProcess->largestIdPlusOne,
-		offsetDate,
 		-kMessagesSliceLimit,
 		kMessagesSliceLimit,
 		[=](const MTPmessages_Messages &result) {
@@ -2274,7 +2266,6 @@ void ApiWrap::requestMessagesSlice() {
 void ApiWrap::requestChatMessages(
 		int splitIndex,
 		int offsetId,
-		int offsetDate,
 		int addOffset,
 		int limit,
 		FnMut<void(MTPmessages_Messages&&)> done) {
@@ -2313,7 +2304,6 @@ void ApiWrap::requestChatMessages(
 					requestChatMessages(
 						splitIndex,
 						offsetId,
-						offsetDate,
 						addOffset,
 						limit,
 						base::take(_chatProcess->requestDone));

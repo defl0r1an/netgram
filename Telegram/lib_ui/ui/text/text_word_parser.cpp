@@ -146,7 +146,7 @@ void WordParser::parse() {
 				// character by character once it no longer does.
 				if ((_lbh.currentPosition > 0)
 					&& (_tText[_lbh.currentPosition - 1] == QChar::Nbsp)
-					&& _attributes[_lbh.currentPosition - 1].whiteSpace) {
+					&& _shaper.attribute(_lbh.currentPosition - 1).whiteSpace) {
 					_lastNbspPosition = _lbh.currentPosition;
 					_lastNbspLine = _lbh.tmpData;
 				}
