@@ -571,6 +571,9 @@ private:
 	[[nodiscard]] QString inlineFieldTrimmedLeft() const;
 	[[nodiscard]] QString inlineFieldTrimmedRight() const;
 	[[nodiscard]] int richOffsetForFieldPosition(int position) const;
+	[[nodiscard]] int richOffsetForFieldOffset(
+		const TextWithEntities &text,
+		int offset) const;
 	[[nodiscard]] int inlineFieldMaxVisualLineWidth() const;
 	struct MathEditResult {
 		QString source;

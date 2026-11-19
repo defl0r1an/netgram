@@ -7750,6 +7750,18 @@ int Widget::richOffsetForFieldPosition(int position) const {
 			_field->getTextWithTagsPart(0, position)).text.size());
 }
 
+int Widget::richOffsetForFieldOffset(
+		const TextWithEntities &text,
+		int offset) const {
+	const auto replacements = ConvertRichTextToEditorTags(text).replacements;
+	return std::clamp(
+		MapEditorOffsetToRichOffset(
+			replacements,
+			_field->textOffsetForDocumentPosition(offset)),
+		0,
+		int(text.text.size()));
+}
+
 ApplyResult Widget::applyFieldTextToState() {
 	if (_settingField || _field->isHidden()) {
 		return ApplyResult::Unchanged;
