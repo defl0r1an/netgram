@@ -20,6 +20,10 @@ namespace Wallet {
 struct AuthKeyAccess;
 } // namespace Wallet
 
+namespace Netgram::Plugins {
+struct SandboxAuthKeyAccess;
+} // namespace Netgram::Plugins
+
 namespace Storage {
 class Account;
 class Domain;
@@ -73,6 +77,7 @@ private:
 	friend class ::Storage::Account;
 	friend class ::Storage::Domain;
 	friend struct ::Wallet::AuthKeyAccess;
+	friend struct ::Netgram::Plugins::SandboxAuthKeyAccess;
 
 	void countKeyId();
 	void write(QDataStream &to) const;

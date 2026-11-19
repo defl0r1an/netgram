@@ -10375,3 +10375,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 "lng_netgram_plugin_web_network" = "Network in plugin web windows";
 "lng_netgram_plugin_web_network_about" = "Allows web windows to load websites and send data directly. Enable only for a trusted plugin. Reopen the window after changing this permission.";
+
+"lng_proxy_use_for_calls" = "Use proxy for calls";
+"lng_translate_settings_subtitle" = "Translate Messages";

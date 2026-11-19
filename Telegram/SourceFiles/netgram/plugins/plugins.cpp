@@ -95,6 +95,15 @@
 namespace Netgram::Plugins {
 [[nodiscard]] QJsonObject MessageToJson(not_null<HistoryItem*> item);
 
+// Internal access for outbound secret matching; not part of the plugin API.
+struct SandboxAuthKeyAccess {
+	[[nodiscard]] static QByteArray Hex(const MTP::AuthKey &key) {
+		return QByteArray(
+			reinterpret_cast<const char*>(key._key.data()),
+			int(key._key.size())).toHex();
+	}
+};
+
 struct ComposeField {
 	QPointer<QObject> guard;
 	Fn<QString()> get;
@@ -1043,11 +1052,7 @@ void RefreshSecrets() {
 	}
 	for (const auto &[index, account] : Core::App().domain().accounts()) {
 		for (const auto &key : account->mtp().getKeysForWrite()) {
-			const auto data = key->data();
-			const auto raw = QByteArray(
-				reinterpret_cast<const char*>(data.data()),
-				int(data.size()));
-			keys.push_back(QString::fromLatin1(raw.toHex()));
+			keys.push_back(QString::fromLatin1(SandboxAuthKeyAccess::Hex(*key)));
 		}
 		const auto session = account->maybeSession();
 		if (!session) {

@@ -1270,3 +1270,6 @@ ayu_* values are based on the upstream Russian translation.
 
 "lng_netgram_plugin_web_network" = "Сеть в веб-окнах плагина";
 "lng_netgram_plugin_web_network_about" = "Разрешает веб-окнам загружать сайты и напрямую отправлять данные. Включайте только для доверенного плагина. После изменения разрешения откройте окно заново.";
+
+"lng_proxy_use_for_calls" = "Использовать прокси для звонков";
+"lng_translate_settings_subtitle" = "Перевод сообщений";

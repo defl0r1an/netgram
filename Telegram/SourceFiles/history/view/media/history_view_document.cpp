@@ -404,7 +404,9 @@ Document::Document(
 				}
 			}, *lifetime);
 			_ttlLifetime = lifetime;
-			_drawTtl = CreateTtlPaintCallback(lifetime, [=] { repaint(); });
+			_drawTtl = CreateTtlPaintCallback(
+				TTLVoiceStops(fullId),
+				[=] { repaint(); });
 		} else if (!_parent->data()->out()) {
 			const auto &data = &_parent->data()->history()->owner();
 			setDocumentLinks(_data, realParent, [=] {
