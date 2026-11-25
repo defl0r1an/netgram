@@ -1059,3 +1059,65 @@ netgramPluginSourceText: FlatLabel(defaultFlatLabel) {
 		font: font(12px);
 	}
 }
+
+
+// Plugin layout.
+netgramPluginLayoutInstallLeftWidth: 210px;
+
+netgramPluginLayoutInstallRightTop: 28px;
+
+netgramPluginLayoutInstallColumnsPadding: margins(0px, 0px, 8px, 0px);
+
+netgramPluginLayoutInstallColumnCardMargin: margins(0px, 0px, 8px, 10px);
+
+netgramPluginLayoutInstallSideName: FlatLabel(defaultFlatLabel) {
+	align: align(top);
+	minWidth: 100px;
+	textFg: windowBoldFg;
+	style: TextStyle(defaultTextStyle) {
+		font: font(20px semibold);
+	}
+}
+
+netgramPluginLayoutInstallSideVersion: FlatLabel(defaultFlatLabel) {
+	align: align(top);
+	minWidth: 100px;
+	textFg: windowSubTextFg;
+	style: TextStyle(defaultTextStyle) {
+		font: font(14px);
+	}
+}
+
+netgramPluginLayoutPortHeaderPadding: margins(22px, 24px, 22px, 4px);
+
+netgramPluginLayoutPortHeaderIcon: 64px;
+
+netgramPluginLayoutPortHeaderBadge: 24px;
+
+netgramPluginLayoutPortHeaderIconSkip: 16px;
+
+netgramPluginLayoutPortHeaderPillSkip: 8px;
+
+netgramPluginLayoutInstallActionsMargin: margins(0px, 12px, 0px, 0px);
+
+netgramPluginLayoutCardSettingsButton: SettingsButton(settingsButtonNoIcon) {
+	textBg: transparent;
+}
+
+netgramPluginLayoutSideTitle: FlatLabel(defaultFlatLabel) {
+	minWidth: 100px;
+	textFg: windowBoldFg;
+	style: TextStyle(defaultTextStyle) {
+		font: font(20px semibold);
+	}
+}
+
+netgramPluginLayoutSideSubtitle: FlatLabel(defaultFlatLabel) {
+	minWidth: 100px;
+	textFg: windowSubTextFg;
+	style: TextStyle(defaultTextStyle) {
+		font: font(14px);
+	}
+}
+
+netgramPluginLayoutSideSubtitleSkip: 4px;

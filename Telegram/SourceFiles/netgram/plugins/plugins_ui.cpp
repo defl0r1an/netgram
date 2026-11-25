@@ -1768,7 +1768,7 @@ void PaintCardBackground(not_null<Ui::RpWidget*> card) {
 		not_null<Ui::VerticalLayout*> container) {
 	const auto card = container->add(
 		object_ptr<Ui::VerticalLayout>(container),
-		st::exdInstallColumnCardMargin,
+		st::netgramPluginLayoutInstallColumnCardMargin,
 		style::al_justify);
 	PaintCardBackground(card);
 	return card;
@@ -2289,7 +2289,7 @@ Fn<void(Fn<void()>)> AddTopActions(
 	const auto row = container
 		? container->add(
 			object_ptr<Ui::RpWidget>(container),
-			st::exdInstallActionsMargin)
+			st::netgramPluginLayoutInstallActionsMargin)
 		: nullptr;
 	if (row) {
 		row->resize(row->width(), size);
@@ -2983,7 +2983,7 @@ void FillGuardSummary(
 	const auto column = container->property("exdColumn").toBool();
 	const auto card = container->add(
 		object_ptr<Ui::VerticalLayout>(container),
-		column ? st::exdInstallColumnCardMargin : st::netgramPluginInstallCardMargin,
+		column ? st::netgramPluginLayoutInstallColumnCardMargin : st::netgramPluginInstallCardMargin,
 		column ? style::al_justify : style::al_left);
 	PaintCardBackground(card);
 	if (!report) {
@@ -3083,12 +3083,12 @@ void ShowInstallBoxResolved(
 		});
 		const auto columns = box->addRow(
 			object_ptr<Ui::VerticalLayout>(box),
-			st::exdInstallColumnsPadding,
+			st::netgramPluginLayoutInstallColumnsPadding,
 			style::al_justify);
-		const auto leftWidth = st::exdInstallLeftWidth;
+		const auto leftWidth = st::netgramPluginLayoutInstallLeftWidth;
 		const auto right = columns->add(
 			object_ptr<Ui::VerticalLayout>(columns),
-			style::margins(leftWidth, st::exdInstallRightTop, 0, 0),
+			style::margins(leftWidth, st::netgramPluginLayoutInstallRightTop, 0, 0),
 			style::al_justify);
 		const auto spacer = columns->add(object_ptr<Ui::RpWidget>(columns));
 		const auto left = Ui::CreateChild<Ui::VerticalLayout>(
@@ -3099,7 +3099,7 @@ void ShowInstallBoxResolved(
 			left->heightValue(),
 			right->heightValue()
 		) | rpl::on_next([=](int leftHeight, int rightHeight) {
-			const auto rightFull = rightHeight + st::exdInstallRightTop;
+			const auto rightFull = rightHeight + st::netgramPluginLayoutInstallRightTop;
 			spacer->resize(
 				spacer->width(),
 				std::max(leftHeight - rightFull, 0));
@@ -3109,7 +3109,7 @@ void ShowInstallBoxResolved(
 			object_ptr<Ui::FlatLabel>(
 				left,
 				rpl::single(meta.value(u"name"_q).toString()),
-				st::exdInstallSideName),
+				st::netgramPluginLayoutInstallSideName),
 			st::netgramPluginInstallNamePadding,
 			style::al_top);
 
@@ -3135,7 +3135,7 @@ void ShowInstallBoxResolved(
 		}
 		if (!line.empty()) {
 			const auto label = left->add(
-				object_ptr<Ui::FlatLabel>(left, st::exdInstallSideVersion),
+				object_ptr<Ui::FlatLabel>(left, st::netgramPluginLayoutInstallSideVersion),
 				st::netgramPluginInstallVersionPadding,
 				style::al_top);
 			label->setMarkedText(line, context);
@@ -3784,7 +3784,7 @@ void AddColorPill(
 	const auto widget = target
 		? target->add(
 			object_ptr<Ui::RpWidget>(target),
-			style::margins(0, st::exdPortHeaderPillSkip, 0, 0))
+			style::margins(0, st::netgramPluginLayoutPortHeaderPillSkip, 0, 0))
 		: box->addRow(
 			object_ptr<Ui::RpWidget>(box),
 			st::netgramPluginInstallPillMargin);
@@ -3827,17 +3827,17 @@ void AddPortHeader(
 	box->setNoContentMargin(true);
 	const auto header = box->addRow(
 		object_ptr<Ui::RpWidget>(box),
-		st::exdPortHeaderPadding,
+		st::netgramPluginLayoutPortHeaderPadding,
 		style::al_justify);
 	const auto icon = Ui::CreateChild<Ui::AbstractButton>(header);
 	SetupPluginIcon(
 		icon,
 		controller,
 		meta.value(u"icon"_q).toString(),
-		st::exdPortHeaderIcon,
-		st::exdPortHeaderBadge);
+		st::netgramPluginLayoutPortHeaderIcon,
+		st::netgramPluginLayoutPortHeaderBadge);
 	icon->resize(
-		st::exdPortHeaderIcon + 2 * (st::exdPortHeaderBadge / 3),
+		st::netgramPluginLayoutPortHeaderIcon + 2 * (st::netgramPluginLayoutPortHeaderBadge / 3),
 		icon->height());
 	const auto text = Ui::CreateChild<Ui::VerticalLayout>(header);
 	box->setProperty(
@@ -3848,7 +3848,7 @@ void AddPortHeader(
 		if (width <= 0) {
 			return;
 		}
-		const auto skip = st::exdPortHeaderIconSkip;
+		const auto skip = st::netgramPluginLayoutPortHeaderIconSkip;
 		const auto available = std::max(width - icon->width() - skip, 1);
 		const auto natural = text->naturalWidth();
 		const auto textWidth = (natural > 0)
@@ -3878,7 +3878,7 @@ void AddPortHeader(
 		object_ptr<Ui::FlatLabel>(
 			text,
 			rpl::single(meta.value(u"name"_q).toString()),
-			st::exdSideTitle),
+			st::netgramPluginLayoutSideTitle),
 		style::margins());
 	auto line = QStringList();
 	if (const auto version = meta.value(u"version"_q).toString();
@@ -3896,8 +3896,8 @@ void AddPortHeader(
 			object_ptr<Ui::FlatLabel>(
 				text,
 				rpl::single(line.join(QString::fromUtf8(" \xE2\x80\xA2 "))),
-				st::exdSideSubtitle),
-			style::margins(0, st::exdSideSubtitleSkip, 0, 0));
+				st::netgramPluginLayoutSideSubtitle),
+			style::margins(0, st::netgramPluginLayoutSideSubtitleSkip, 0, 0));
 	}
 }
 
@@ -4804,7 +4804,7 @@ void ShowPortSetupBox(
 			provider->value() | rpl::map([](int value) {
 				return value ? PortServiceName(value) : tr::lng_netgram_plugins_x_port_provider_none(tr::now);
 			}),
-			st::exdCardSettingsButton);
+			st::netgramPluginLayoutCardSettingsButton);
 		serviceButton->setClickedCallback([=] {
 			PwShowBox(controller, Box([=](not_null<Ui::GenericBox*> inner) {
 				SingleChoiceBox(inner, {
@@ -4834,7 +4834,7 @@ void ShowPortSetupBox(
 					? fallback
 					: tr::lng_netgram_plugins_x_port_setup_model_none(tr::now);
 			}),
-			st::exdCardSettingsButton);
+			st::netgramPluginLayoutCardSettingsButton);
 		modelButton->setClickedCallback([=] {
 			const auto current = model->current().isEmpty()
 				? Netgram::PluginPorter::DefaultModel(provider->current())
@@ -4859,7 +4859,7 @@ void ShowPortSetupBox(
 					? tr::lng_netgram_plugins_x_port_setup_key_empty(tr::now)
 					: tr::lng_netgram_plugins_x_port_setup_key_set(tr::now);
 			}),
-			st::exdCardSettingsButton);
+			st::netgramPluginLayoutCardSettingsButton);
 		keyButton->setClickedCallback([=] {
 			ShowInput(
 				controller,
@@ -4871,7 +4871,7 @@ void ShowPortSetupBox(
 		const auto modeButton = service->add(object_ptr<Ui::SettingsButton>(
 			service,
 			tr::lng_netgram_plugins_x_port_setup_agent(),
-			st::exdCardSettingsButton));
+			st::netgramPluginLayoutCardSettingsButton));
 		modeButton->toggleOn(rpl::single(agent->current()));
 		modeButton->toggledChanges(
 		) | rpl::on_next([=](bool value) {
@@ -6734,9 +6734,9 @@ void ShowPluginsWindow(not_null<Window::SessionController*> controller) {
 					object_ptr<Ui::SettingsButton>(
 						block,
 						std::move(text),
-						st::exdCardSettingsButton));
+						st::netgramPluginLayoutCardSettingsButton));
 				if (icon) {
-					auto padding = st::exdCardSettingsButton.padding;
+					auto padding = st::netgramPluginLayoutCardSettingsButton.padding;
 					padding.setLeft(Px(50));
 					button->setPaddingOverride(padding);
 					const auto iconWidget = Ui::CreateChild<Ui::RpWidget>(button);
@@ -6781,7 +6781,7 @@ void ShowPluginsWindow(not_null<Window::SessionController*> controller) {
 				object_ptr<Ui::SettingsButton>(
 					main,
 					tr::lng_netgram_plugins_x_pw_enabled_row(),
-					st::exdCardSettingsButton));
+					st::netgramPluginLayoutCardSettingsButton));
 			enabledRow->toggleOn(rpl::single(entry->enabled));
 			enabledRow->toggledChanges(
 			) | rpl::on_next([=](bool value) {

@@ -1,6 +1,5 @@
 #include "netgram/plugins/plugin_guard.h"
 
-#include "extera/extera_badges.h"
 #include "netgram/plugins/plugin_config.h"
 #include "netgram/plugins/plugins.h"
 #include "lang/lang_keys.h"
