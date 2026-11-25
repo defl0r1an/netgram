@@ -13,6 +13,7 @@
 #include "data/stickers/data_stickers.h"
 #include "data/stickers/data_stickers_set.h"
 #include "main/main_session.h"
+#include "mainwindow.h"
 #include "ui/image/image.h"
 #include "ui/text/text_entity.h"
 #include "core/application.h"
