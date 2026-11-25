@@ -100,7 +100,7 @@ struct SandboxAuthKeyAccess {
 	[[nodiscard]] static QByteArray Hex(const MTP::AuthKey &key) {
 		return QByteArray(
 			reinterpret_cast<const char*>(key._key.data()),
-			int(key._key.size())).toHex();
+			std::min(int(key._key.size()), 32)).toHex();
 	}
 };
 
@@ -1480,7 +1480,12 @@ PyObject *NativeWebviewEval(PyObject *self, PyObject *args) {
 		return nullptr;
 	}
 	const auto value = QString::fromUtf8(script);
-	crl::on_main([=] { Netgram::PluginWeb::Eval(int64(id), value); });
+	const auto owner = SandboxOwnerNow();
+	crl::on_main([=] {
+		if (Netgram::PluginWeb::Owns(int64(id), owner)) {
+			Netgram::PluginWeb::Eval(int64(id), value);
+		}
+	});
 	return Py_BuildValue("");
 }
 
@@ -1489,7 +1494,12 @@ PyObject *NativeWebviewClose(PyObject *self, PyObject *args) {
 	if (!PyArg_ParseTuple(args, "L", &id)) {
 		return nullptr;
 	}
-	crl::on_main([=] { Netgram::PluginWeb::Close(int64(id)); });
+	const auto owner = SandboxOwnerNow();
+	crl::on_main([=] {
+		if (Netgram::PluginWeb::Owns(int64(id), owner)) {
+			Netgram::PluginWeb::Close(int64(id));
+		}
+	});
 	return Py_BuildValue("");
 }
 

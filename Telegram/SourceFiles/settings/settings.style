@@ -811,7 +811,18 @@ netgramPluginPluginIcon: 42px;
 
 netgramPluginPluginIconSkip: 14px;
 
-netgramPluginInstallWidth: 420px;
+netgramPluginInstallWidth: 600px;
+
+netgramPluginUpdateCardTitle: FlatLabel(defaultFlatLabel) {
+	minWidth: 100px;
+	textFg: windowBoldFg;
+	style: semiboldTextStyle;
+}
+
+netgramPluginUpdateCardText: FlatLabel(defaultFlatLabel) {
+	minWidth: 100px;
+	textFg: windowSubTextFg;
+}
 
 netgramPluginInstallBox: Box(defaultBox) {
 	buttonPadding: margins(0px, 0px, 0px, 0px);
@@ -922,7 +933,7 @@ netgramPluginDescriptionMore: margins(16px, 0px, 16px, 12px);
 
 netgramPluginTopActionSize: 36px;
 
-netgramPluginTopActionsMargin: margins(0px, 14px, 14px, 0px);
+netgramPluginTopActionsMargin: margins(0px, 14px, 16px, 0px);
 
 netgramPluginTopActionTranslate: icon {{ "menu/translate", windowSubTextFg }};
 

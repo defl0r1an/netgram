@@ -61,5 +61,8 @@ jobs:
       - name: Test plugin access control.
         run: python3 Telegram/SourceFiles/tests/test_plugin_sandbox.py
 
+      - name: Test plugin permission wrappers.
+        run: python3 Telegram/SourceFiles/tests/test_plugin_permissions.py
+
       - name: Test Windows batch generation.
         run: python3 Telegram/SourceFiles/tests/test_prepare_windows_batch.py

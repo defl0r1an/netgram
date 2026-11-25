@@ -5,6 +5,7 @@
 #include "netgram/plugins/plugins.h"
 #include "netgram/plugins/plugins_ui.h"
 #include "lang/lang_keys.h"
+#include "settings.h"
 #include "ui/layers/generic_box.h"
 #include "ui/vertical_list.h"
 #include "ui/widgets/labels.h"
@@ -13,6 +14,10 @@
 #include "styles/style_layers.h"
 #include "styles/style_settings.h"
 
+#include <QtCore/QDateTime>
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
@@ -99,11 +104,15 @@ struct Settings {
 	return result;
 }
 
-[[nodiscard]] int ProviderIndex() {
+[[nodiscard]] int ProviderIndexFor(const QString &prefix) {
 	return std::clamp(
-		Int(u"port_llm_provider"_q),
+		Int(prefix + u"_provider"_q),
 		0,
 		int(kProviders.size()) - 1);
+}
+
+[[nodiscard]] int ProviderIndex() {
+	return ProviderIndexFor(u"port_llm"_q);
 }
 
 [[nodiscard]] QString NormalizeEndpoint(QString endpoint, bool anthropic) {
@@ -133,10 +142,10 @@ struct Settings {
 	return endpoint;
 }
 
-[[nodiscard]] Settings CurrentSettings() {
+[[nodiscard]] Settings SettingsFor(const QString &prefix) {
 	auto result = Settings();
-	result.provider = kProviders[ProviderIndex()];
-	const auto endpoint = String(u"port_llm_endpoint"_q).trimmed();
+	result.provider = kProviders[ProviderIndexFor(prefix)];
+	const auto endpoint = String(prefix + u"_endpoint"_q).trimmed();
 	if (!endpoint.isEmpty()) {
 		result.provider.endpoint = NormalizeEndpoint(
 			endpoint,
@@ -144,13 +153,17 @@ struct Settings {
 		result.provider.ollama = result.provider.endpoint.endsWith(
 			u"/api/chat"_q);
 	}
-	const auto model = String(u"port_llm_model"_q).trimmed();
+	const auto model = String(prefix + u"_model"_q).trimmed();
 	if (!model.isEmpty()) {
 		result.provider.model = model;
 	}
-	result.key = String(u"port_llm_key"_q).trimmed();
+	result.key = String(prefix + u"_key"_q).trimmed();
 	result.agent = (Int(u"port_llm_mode"_q) == 0);
 	return result;
+}
+
+[[nodiscard]] Settings CurrentSettings() {
+	return SettingsFor(u"port_llm"_q);
 }
 
 [[nodiscard]] QNetworkReply *Send(
@@ -275,7 +288,64 @@ struct Job {
 	crl::time requested = 0;
 	int needRounds = 0;
 	bool canceled = false;
+	QJsonObject log;
+	QString logPath;
 };
+
+void Log(
+		const std::shared_ptr<Job> &job,
+		const QString &type,
+		QJsonObject data = {}) {
+	if (!job || job->logPath.isEmpty()) {
+		return;
+	}
+	data.insert(u"type"_q, type);
+	data.insert(
+		u"time"_q,
+		QDateTime::currentDateTime().toString(Qt::ISODateWithMs));
+	auto events = job->log.value(u"events"_q).toArray();
+	events.push_back(data);
+	job->log.insert(u"events"_q, events);
+	auto file = QFile(job->logPath);
+	if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+		file.write(QJsonDocument(job->log).toJson(QJsonDocument::Indented));
+	}
+}
+
+void StartLog(const std::shared_ptr<Job> &job, const QString &path) {
+	const auto folder = cWorkingDir() + u"tdata/exd_port_logs/"_q;
+	QDir().mkpath(folder);
+	const auto stamp = QDateTime::currentDateTime().toString(
+		u"yyyyMMdd-HHmmss"_q);
+	job->logPath = folder + stamp + u"_"_q
+		+ QFileInfo(path).completeBaseName() + u".json"_q;
+	auto source = QString();
+	auto file = QFile(path);
+	if (file.open(QIODevice::ReadOnly)) {
+		source = QString::fromUtf8(file.readAll());
+	}
+	job->log = QJsonObject{
+		{ u"plugin"_q, path },
+		{ u"provider"_q, ProviderIndex() },
+		{ u"model"_q, job->settings.provider.model },
+		{ u"endpoint"_q, job->settings.provider.endpoint },
+		{ u"agent"_q, job->settings.agent },
+		{ u"source"_q, source },
+		{ u"system"_q, job->system },
+		{ u"prepared"_q, job->prepared },
+		{ u"events"_q, QJsonArray() },
+	};
+	Log(job, u"start"_q);
+}
+
+[[nodiscard]] QString StageName(Progress::Stage stage) {
+	switch (stage) {
+	case Progress::Stage::Done: return u"done"_q;
+	case Progress::Stage::Failed: return u"failed"_q;
+	case Progress::Stage::Nothing: return u"nothing"_q;
+	default: return u"other"_q;
+	}
+}
 
 Info CurrentInfo() {
 	const auto index = ProviderIndex();
@@ -301,16 +371,61 @@ bool Configured() {
 	return settings.provider.local || !settings.key.isEmpty();
 }
 
-bool Suggested(const QJsonObject &info) {
-	if (info.value(u"desktop"_q).toBool()
-		|| info.value(u"format"_q).toString() == u"elyx"_q) {
+bool ConfiguredFor(const QString &prefix) {
+	if (!ProviderIndexFor(prefix)) {
 		return false;
 	}
-	const auto capabilities = info.value(u"capabilities"_q).toObject();
-	return !info.value(u"unsupported"_q).toArray().isEmpty()
-		|| capabilities.contains(u"hooks"_q)
-		|| capabilities.contains(u"dex"_q)
-		|| !info.value(u"error"_q).toString().isEmpty();
+	const auto settings = SettingsFor(prefix);
+	if (settings.provider.endpoint.isEmpty()) {
+		return false;
+	}
+	return settings.provider.local || !settings.key.isEmpty();
+}
+
+QString ModelFor(const QString &prefix) {
+	const auto settings = SettingsFor(prefix);
+	return settings.provider.model.isEmpty()
+		? QUrl(settings.provider.endpoint).host()
+		: settings.provider.model;
+}
+
+void Complete(
+		const QString &prefix,
+		const QString &system,
+		const QJsonArray &messages,
+		Fn<void(QString answer, bool ok)> done) {
+	const auto settings = SettingsFor(prefix);
+	auto list = messages;
+	if (settings.provider.anthropic) {
+		auto fixed = QJsonArray();
+		for (const auto &value : messages) {
+			auto object = value.toObject();
+			if (object.value(u"role"_q).toString() == u"system"_q) {
+				continue;
+			}
+			fixed.push_back(object);
+		}
+		list = fixed;
+	}
+	const auto reply = Send(settings, system, list);
+	QObject::connect(reply, &QNetworkReply::finished, [=] {
+		reply->deleteLater();
+		const auto data = reply->readAll();
+		auto error = QString();
+		const auto answer = ParseAnswer(
+			data,
+			settings.provider.anthropic,
+			&error);
+		if (!answer.trimmed().isEmpty()) {
+			done(answer.trimmed(), true);
+		} else {
+			done(error.isEmpty() ? reply->errorString() : error, false);
+		}
+	});
+}
+
+bool Suggested(const QJsonObject &info) {
+	return info.value(u"format"_q).toString() != u"elyx"_q;
 }
 
 std::shared_ptr<Job> Run(
@@ -346,6 +461,7 @@ std::shared_ptr<Job> Run(
 	job->progress.library = stripped.value(u"library"_q).toBool();
 	job->update = std::move(update);
 	job->started = crl::now();
+	StartLog(job, path);
 	const auto weak = std::weak_ptr<Job>(job);
 	const auto notify = [=] {
 		if (const auto strong = weak.lock()) {
@@ -359,6 +475,14 @@ std::shared_ptr<Job> Run(
 	const auto finish = [=](Progress::Stage stage) {
 		if (const auto strong = weak.lock()) {
 			strong->progress.stage = stage;
+			Log(strong, u"finish"_q, QJsonObject{
+				{ u"stage"_q, StageName(stage) },
+				{ u"error"_q, strong->progress.error },
+				{ u"errors"_q, QJsonArray::fromStringList(
+					strong->progress.errors) },
+				{ u"path"_q, strong->progress.path },
+				{ u"total_ms"_q, int(crl::now() - strong->started) },
+			});
 			notify();
 			strong->request = nullptr;
 		}
@@ -373,6 +497,10 @@ std::shared_ptr<Job> Run(
 			? Progress::Stage::Fixing
 			: Progress::Stage::Requesting;
 		strong->requested = crl::now();
+		Log(strong, u"request"_q, QJsonObject{
+			{ u"attempt"_q, strong->progress.attempt },
+			{ u"messages"_q, strong->messages },
+		});
 		notify();
 		const auto reply = Send(
 			strong->settings,
@@ -392,6 +520,17 @@ std::shared_ptr<Job> Run(
 				data,
 				job->settings.provider.anthropic,
 				&error);
+			Log(job, u"response"_q, QJsonObject{
+				{ u"http"_q, reply->attribute(
+					QNetworkRequest::HttpStatusCodeAttribute).toInt() },
+				{ u"network_error"_q, (reply->error() != QNetworkReply::NoError)
+					? reply->errorString()
+					: QString() },
+				{ u"elapsed_ms"_q, job->progress.elapsed },
+				{ u"raw"_q, QString::fromUtf8(data) },
+				{ u"answer"_q, answer },
+				{ u"parse_error"_q, error },
+			});
 			if (answer.isEmpty()) {
 				if (error.isEmpty()) {
 					error = (reply->error() != QNetworkReply::NoError)
@@ -411,6 +550,7 @@ std::shared_ptr<Job> Run(
 				{ u"answer"_q, answer },
 				{ u"prepared"_q, job->prepared },
 			}).toObject();
+			Log(job, u"check"_q, checked);
 			if (checked.isEmpty()) {
 				job->progress.error = tr::lng_netgram_plugins_x_port_error_empty(tr::now);
 				finish(Progress::Stage::Failed);
@@ -487,6 +627,7 @@ void Cancel(const std::shared_ptr<Job> &job) {
 	if (!job) {
 		return;
 	}
+	Log(job, u"canceled"_q);
 	job->canceled = true;
 	job->update = nullptr;
 	job->request = nullptr;

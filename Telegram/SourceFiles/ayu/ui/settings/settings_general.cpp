@@ -1,3 +1,4 @@
+#include "netgram/plugins/plugin_config.h"
 // This is the source code of AyuGram for Desktop.
 //
 // We do not and cannot prevent the use of our code,
@@ -312,6 +313,23 @@ const auto kMeta = BuildHelper({
 
 	builder.addSkip();
 	BuildQoLToggles(builder, ayu);
+	for (const auto &[key, title] : std::vector<std::pair<QString, rpl::producer<QString>>>{
+		{ u"file_text_preview"_q, tr::lng_netgram_text_file_preview() },
+		{ u"paste_secret_warning"_q, tr::lng_netgram_secret_warning() },
+	}) {
+		const auto toggle = builder.addButton({
+			.id = u"netgram/"_q + key,
+			.title = title,
+			.st = &st::settingsButtonNoIcon,
+			.toggled = Netgram::Config::Instance().boolChanges(key),
+		});
+		toggle->toggledChanges() | rpl::filter([=](bool value) {
+			return value != Netgram::Bool(key);
+		}) | rpl::on_next([=](bool value) {
+			Netgram::Config::Instance().setBool(key, value);
+		}, toggle->lifetime());
+	}
+
 	builder.addSkip();
 });
 

@@ -1,3 +1,4 @@
+#include "netgram/plugins/content_safety.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -3302,6 +3303,7 @@ void ComposeControls::initKeyHandler() {
 }
 
 void ComposeControls::initField() {
+	Netgram::Safety::SetupSecretBar(_parent, _field.get(), _parent->sizeValue() | rpl::map([](QSize size) { return QRect(QPoint(), size); }));
 	_field->setMaxHeight(st::historyComposeFieldMaxHeight);
 	Netgram::Plugins::RegisterComposeField(
 		_field.get(),

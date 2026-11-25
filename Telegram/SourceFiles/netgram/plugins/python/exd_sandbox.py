@@ -7,6 +7,7 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
     host._exd_sandbox_installed = True
 
     import _imp
+    from binascii import a2b_base64 as _a2b
     import _io
     import _socket
     import _thread
@@ -398,7 +399,7 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
     for key, rules in (stored.get("extra") or {}).items():
         if _type(key) is _str and _type(rules) is _dict:
             extra_rules[key] = {d: r for d, r in rules.items()
-                                if d in ("clipboard", "links", "notify", "webview") and r in ("allow", "deny", "ask")}
+                                if d in ("clipboard", "links", "notify", "webview", "files_read", "files_write", "msg_send", "msg_edit", "msg_delete") and r in ("allow", "deny", "ask")}
     files_granted = {}
     once = set()
     leak_once = set()
@@ -440,6 +441,11 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
                     "Plugin \"{name}\" tried to start a program. Launch blocked."),
         "native": ("Плагин «{name}» пытался получить прямой доступ к системе. Действие заблокировано.",
                    "Plugin \"{name}\" tried to access the system directly. Action blocked."),
+        "files_off": ("Плагину «{name}» запрещён доступ к файлам.", "File access is disabled for plugin {name}."),
+        "msg_send_off": ("Плагину «{name}» запрещено отправлять сообщения.", "Sending messages is disabled for plugin {name}."),
+        "msg_edit_off": ("Плагину «{name}» запрещено редактировать сообщения.", "Editing messages is disabled for plugin {name}."),
+        "msg_delete_off": ("Плагину «{name}» запрещено удалять сообщения.", "Deleting messages is disabled for plugin {name}."),
+        "leak_blocked": ("Плагин «{name}» пытался отправить {target}. Отправка заблокирована.", "Plugin {name} tried sending {target}. Blocked."),
         "denied_net": ("Плагину «{name}» запрещено подключение к {target}.",
                        "Plugin \"{name}\" is not allowed to connect to {target}."),
         "unknown": ("Заблокировано действие плагина из неизвестного контекста.",
@@ -979,6 +985,9 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
             return host_name
         return None
 
+    def extra_rule(owner, key):
+        return _dget(_dget(extra_rules, owner, {}), key)
+
     # Decisions
     def deny_path(plugin_id, raw, write, importing, listing=False, base=None, chain=()):
         text_path = path_of(raw)
@@ -989,6 +998,10 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
         path = absolute(text_path, base)
         if path is None:
             return "netgram sandbox: invalid path"
+        if extra_rule(plugin_id, "files_write" if write else "files_read") == "deny":
+            journal_block(plugin_id, "path:" + folder_key(path))
+            toast(plugin_id, "files_off")
+            return "netgram sandbox: file access is disabled for this plugin"
         verdict = classify(plugin_id, path, write, importing, listing, chain)
         if verdict == "allow":
             return None
@@ -1328,7 +1341,7 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
                     cut = _rfind(third, "=")
                     key = third[:cut] if cut > 0 else ""
                     value = third[cut + 1:] if cut > 0 else ""
-                    if key in ("clipboard", "links", "notify", "webview"):
+                    if key in ("clipboard", "links", "notify", "webview", "files_read", "files_write", "msg_send", "msg_edit", "msg_delete"):
                         bucket = extra_rules.setdefault(first, {})
                         if value in ("allow", "deny", "ask"):
                             _dset(bucket, key, value)
@@ -1672,6 +1685,9 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
             category = None
         if category is None:
             return None
+        if category in ("session", "code", "phone"):
+            toast(owner, "leak_blocked", text("leak_" + category))
+            return "netgram sandbox: sending protected data is blocked"
         key = category + "|" + target
         stamp = owner + "\x00" + key
         if stamp in leak_once:
@@ -1736,6 +1752,45 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
         except _Err:
             pass
 
+    def tl_name(name, args):
+        if not args or _type(args[0]) is not _str:
+            return ""
+        value = args[0]
+        if name == "send_request":
+            try:
+                request = json.loads(value)
+                method = request.get("_", "") if _type(request) is _dict else ""
+                return _lower(method) if _type(method) is _str else ""
+            except _Err:
+                return ""
+        if name == "send_raw_request":
+            try:
+                head = _a2b(value[:8])
+                ident = head[0] | (head[1] << 8) | (head[2] << 16) | (head[3] << 24)
+                runtime = sys.modules.get("tl_runtime")
+                combinator = runtime._by_id.get(ident) if runtime is not None else None
+                return _lower(combinator.name) if combinator is not None else ""
+            except _Err:
+                return ""
+        return ""
+
+    def message_kind(name, args):
+        if name in ("send_message", "send_media"):
+            return "msg_send"
+        if name == "edit_message":
+            return "msg_edit"
+        method = tl_name(name, args)
+        if not _sw(method, ("messages.", "channels.")):
+            return None
+        action = method[_find(method, ".") + 1:]
+        if _sw(action, "delete") and ("message" in action or "history" in action):
+            return "msg_delete"
+        if _sw(action, "edit") and "message" in action:
+            return "msg_edit"
+        if _sw(action, ("send", "forward")) and ("message" in action or "media" in action):
+            return "msg_send"
+        return None
+
     def wrap_native(name, target_of, path_index=None):
         original = getattr(native, name, None) if native is not None else None
         if original is None:
@@ -1744,6 +1799,11 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
         def wrapper(*args):
             owner = owner_now()
             if owner != "":
+                kind = message_kind(name, args)
+                if kind is not None and extra_rule(owner, kind) == "deny":
+                    journal_block(owner, kind)
+                    toast(owner, kind + "_off")
+                    raise _PermErr("netgram sandbox: this action is disabled for the plugin")
                 if path_index is not None and _len(args) > path_index and _type(args[path_index]) is _str:
                     verdict = deny_path(owner, args[path_index], False, False)
                     if verdict:
@@ -1757,9 +1817,6 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
             setattr(native, name, wrapper)
         except _Err:
             pass
-
-    def extra_rule(owner, key):
-        return _dget(_dget(extra_rules, owner, {}), key)
 
     def wrap_extra(name, key):
         original = getattr(native, name, None) if native is not None else None
@@ -1790,6 +1847,41 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
     except _Err:
         pass
 
+    def wrap_fd_write(name, data_index):
+        original = getattr(os, name, None)
+        if original is None:
+            return
+
+        def wrapper(*args, **kwargs):
+            owner = owner_now()
+            if owner != "" and args:
+                try:
+                    is_socket = (_stat_fd(args[0]).st_mode & 0o170000) == 0o140000
+                except _Err:
+                    is_socket = False
+                if is_socket and name == "sendfile":
+                    journal_block(owner, "net:sendfile")
+                    raise _PermErr("netgram sandbox: sendfile to sockets is blocked")
+                if is_socket:
+                    payload = args[data_index] if _len(args) > data_index else b""
+                    verdict = leak_check(owner, payload, "socket")
+                    if verdict:
+                        raise _PermErr(verdict)
+            return original(*args, **kwargs)
+
+        try:
+            wrapper.__name__ = name
+            setattr(os, name, wrapper)
+        except _Err:
+            pass
+
+    if not win:
+        _stat_fd = os.fstat
+        wrap_fd_write("write", 1)
+        wrap_fd_write("writev", 1)
+        wrap_fd_write("pwrite", 1)
+        wrap_fd_write("sendfile", 1)
+
     def tg_target(args):
         return "Telegram"
 
@@ -1815,6 +1907,12 @@ def install(host, plugins_dir, settings_dir, files_dir, deps_dir, interactive=Tr
         _thread.start_new_thread = start_new_thread
         _thread.start_new = start_new_thread
         threading._start_new_thread = start_new_thread
+        for name in ("sbx_install", "sbx_secrets", "sbx_push", "sbx_pop", "sbx_owner", "sbx_state", "sbx_ticket",
+                     "sbx_thread_entry", "sbx_prompt", "sbx_toast", "sbx_create_dynamic", "sbx_create_builtin"):
+            try:
+                delattr(native, name)
+            except _Err:
+                pass
     else:
         watched = read_events | write_events | pair_events | process_events | internals | net_name_events \
             | connect_events | {"open", "import", "compile", "sqlite3.connect", "socket.connect", "socket.bind",

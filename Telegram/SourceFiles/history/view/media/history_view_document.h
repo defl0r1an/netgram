@@ -9,6 +9,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "history/view/media/history_view_file.h"
 #include "base/runtime_composer.h"
+#include "ui/text/text.h"
 
 struct HistoryDocumentNamed;
 struct HistoryDocumentThumbed;
@@ -180,6 +181,12 @@ private:
 	};
 
 	mutable TooltipFilename _tooltipFilename;
+
+	void validateTextPreview() const;
+	[[nodiscard]] bool hasTextPreview() const;
+	mutable Ui::Text::String _textPreview;
+	mutable bool _textPreviewLaidOut = false;
+	mutable bool _textPreviewChecked = false;
 
 	TtlPaintCallback _drawTtl;
 	std::shared_ptr<rpl::lifetime> _ttlLifetime;

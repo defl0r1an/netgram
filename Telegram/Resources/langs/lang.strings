@@ -10378,3 +10378,125 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 "lng_proxy_use_for_calls" = "Use proxy for calls";
 "lng_translate_settings_subtitle" = "Translate Messages";
+
+"lng_netgram_plugins_plugins" = "Plugins";
+
+"lng_netgram_plugins_plugins_not_running" = "The plugins engine is not running.";
+
+"lng_netgram_plugins_restart" = "Restart";
+
+"lng_netgram_plugins_restart_required" = "The change will be applied after restart.";
+
+"lng_netgram_plugins_x_link_hint_hidden" = "The link leads to a different address than its text";
+
+"lng_netgram_plugins_x_link_hint_mention" = "The link looks like a username but leads elsewhere";
+
+"lng_netgram_plugins_x_link_hint_mismatch" = "The link text shows a different site";
+
+"lng_netgram_plugins_x_link_hint_referral" = "Referral link";
+
+"lng_netgram_plugins_x_perm_request_native" = "System access request";
+
+"lng_netgram_plugins_x_perm_request_process" = "Request to start programs";
+
+"lng_netgram_plugins_x_plugin_perm_files_read" = "Reading files";
+
+"lng_netgram_plugins_x_plugin_perm_files_write" = "Changing and deleting files";
+
+"lng_netgram_plugins_x_plugin_perm_msg_delete" = "Deleting messages";
+
+"lng_netgram_plugins_x_plugin_perm_msg_edit" = "Editing messages";
+
+"lng_netgram_plugins_x_plugin_perm_msg_send" = "Sending messages";
+
+"lng_netgram_plugins_x_plugin_perm_native" = "Direct system access";
+
+"lng_netgram_plugins_x_plugin_perm_process" = "Starting programs";
+
+"lng_netgram_plugins_x_pw_all" = "All";
+
+"lng_netgram_plugins_x_pw_chip_desktop" = "For Desktop";
+
+"lng_netgram_plugins_x_pw_chip_partial" = "Partially Working";
+
+"lng_netgram_plugins_x_pw_chip_settings" = "With Settings";
+
+"lng_netgram_plugins_x_pw_delete" = "Delete Plugin";
+
+"lng_netgram_plugins_x_pw_disabled" = "Disabled";
+
+"lng_netgram_plugins_x_pw_empty" = "Nothing found";
+
+"lng_netgram_plugins_x_pw_enabled" = "Enabled";
+
+"lng_netgram_plugins_x_pw_enabled_row" = "Enabled";
+
+"lng_netgram_plugins_x_pw_engine" = "Plugins Engine";
+
+"lng_netgram_plugins_x_pw_engine_disabled" = "The plugins engine is turned off. Plugins are not loaded, their settings are kept.";
+
+"lng_netgram_plugins_x_pw_engine_missing" = "Unavailable";
+
+"lng_netgram_plugins_x_pw_engine_off" = "Turned off";
+
+"lng_netgram_plugins_x_pw_engine_on" = "Running";
+
+"lng_netgram_plugins_x_pw_engine_settings" = "Engine Settings";
+
+"lng_netgram_plugins_x_pw_errors" = "With Errors";
+
+"lng_netgram_plugins_x_pw_info" = "Details";
+
+"lng_netgram_plugins_x_pw_install" = "Install";
+
+"lng_netgram_plugins_x_pw_installed" = "Installed";
+
+"lng_netgram_plugins_x_pw_other" = "Third-party";
+
+"lng_netgram_plugins_x_pw_permissions" = "Permissions";
+
+"lng_netgram_plugins_x_pw_permissions_none" = "Not requested";
+
+"lng_netgram_plugins_x_pw_pinned" = "Pinned";
+
+"lng_netgram_plugins_x_pw_ported" = "From Android";
+
+"lng_netgram_plugins_x_pw_search" = "Search by name, author or description";
+
+"lng_netgram_plugins_x_pw_section_other" = "Other";
+
+"lng_netgram_plugins_x_pw_settings" = "Plugin Settings";
+
+"lng_netgram_plugins_x_pw_size" = "Size";
+
+"lng_netgram_plugins_x_pw_sort_date" = "By Install Date";
+
+"lng_netgram_plugins_x_pw_sort_enabled" = "Enabled First";
+
+"lng_netgram_plugins_x_pw_sort_name" = "By Name";
+
+"lng_netgram_plugins_x_pw_sort_pinned" = "Pinned First";
+
+"lng_netgram_plugins_x_pw_source" = "Source";
+
+"lng_netgram_plugins_x_pw_source_other" = "Third-party file";
+
+"lng_netgram_plugins_x_pw_source_trusted" = "Trusted channel";
+
+"lng_netgram_plugins_x_pw_sources" = "Sources";
+
+"lng_netgram_plugins_x_pw_tag_desktop" = "Desktop";
+
+"lng_netgram_plugins_x_pw_tag_error" = "Error";
+
+"lng_netgram_plugins_x_pw_tag_partial" = "Partial";
+
+"lng_netgram_plugins_x_pw_tag_ported" = "Ported";
+
+"lng_netgram_plugins_x_pw_trusted" = "Trusted";
+
+"lng_netgram_plugins_x_secret_bar" = "The message contains a token, a key or a password";
+
+"lng_netgram_text_file_preview" = "Preview downloaded text and code files";
+
+"lng_netgram_secret_warning" = "Warn about passwords and keys in messages";

@@ -1273,3 +1273,125 @@ ayu_* values are based on the upstream Russian translation.
 
 "lng_proxy_use_for_calls" = "Использовать прокси для звонков";
 "lng_translate_settings_subtitle" = "Перевод сообщений";
+
+"lng_netgram_plugins_plugins" = "Плагины";
+
+"lng_netgram_plugins_plugins_not_running" = "Движок плагинов не запущен.";
+
+"lng_netgram_plugins_restart" = "Перезапустить";
+
+"lng_netgram_plugins_restart_required" = "Изменение вступит в силу после перезапуска.";
+
+"lng_netgram_plugins_x_link_hint_hidden" = "Ссылка ведёт на другой адрес, чем указано в тексте";
+
+"lng_netgram_plugins_x_link_hint_mention" = "Ссылка выглядит как имя пользователя, но ведёт в другое место";
+
+"lng_netgram_plugins_x_link_hint_mismatch" = "Текст ссылки указывает на другой сайт";
+
+"lng_netgram_plugins_x_link_hint_referral" = "Реферальная ссылка";
+
+"lng_netgram_plugins_x_perm_request_native" = "Запрос доступа к системе";
+
+"lng_netgram_plugins_x_perm_request_process" = "Запрос на запуск программ";
+
+"lng_netgram_plugins_x_plugin_perm_files_read" = "Чтение файлов";
+
+"lng_netgram_plugins_x_plugin_perm_files_write" = "Изменение и удаление файлов";
+
+"lng_netgram_plugins_x_plugin_perm_msg_delete" = "Удаление сообщений";
+
+"lng_netgram_plugins_x_plugin_perm_msg_edit" = "Редактирование сообщений";
+
+"lng_netgram_plugins_x_plugin_perm_msg_send" = "Отправка сообщений";
+
+"lng_netgram_plugins_x_plugin_perm_native" = "Прямой доступ к системе";
+
+"lng_netgram_plugins_x_plugin_perm_process" = "Запуск программ";
+
+"lng_netgram_plugins_x_pw_all" = "Все";
+
+"lng_netgram_plugins_x_pw_chip_desktop" = "Для ПК";
+
+"lng_netgram_plugins_x_pw_chip_partial" = "Частично работают";
+
+"lng_netgram_plugins_x_pw_chip_settings" = "С настройками";
+
+"lng_netgram_plugins_x_pw_delete" = "Удалить плагин";
+
+"lng_netgram_plugins_x_pw_disabled" = "Выключенные";
+
+"lng_netgram_plugins_x_pw_empty" = "Ничего не найдено";
+
+"lng_netgram_plugins_x_pw_enabled" = "Включённые";
+
+"lng_netgram_plugins_x_pw_enabled_row" = "Включён";
+
+"lng_netgram_plugins_x_pw_engine" = "Движок плагинов";
+
+"lng_netgram_plugins_x_pw_engine_disabled" = "Движок плагинов выключен. Плагины не загружаются, их настройки сохранены.";
+
+"lng_netgram_plugins_x_pw_engine_missing" = "Недоступен";
+
+"lng_netgram_plugins_x_pw_engine_off" = "Выключен";
+
+"lng_netgram_plugins_x_pw_engine_on" = "Работает";
+
+"lng_netgram_plugins_x_pw_engine_settings" = "Настройки движка";
+
+"lng_netgram_plugins_x_pw_errors" = "С ошибками";
+
+"lng_netgram_plugins_x_pw_info" = "Сведения";
+
+"lng_netgram_plugins_x_pw_install" = "Установить";
+
+"lng_netgram_plugins_x_pw_installed" = "Установлен";
+
+"lng_netgram_plugins_x_pw_other" = "Сторонние";
+
+"lng_netgram_plugins_x_pw_permissions" = "Разрешения";
+
+"lng_netgram_plugins_x_pw_permissions_none" = "Не запрошены";
+
+"lng_netgram_plugins_x_pw_pinned" = "Закреплённые";
+
+"lng_netgram_plugins_x_pw_ported" = "С Android";
+
+"lng_netgram_plugins_x_pw_search" = "Поиск по названию, автору и описанию";
+
+"lng_netgram_plugins_x_pw_section_other" = "Остальные";
+
+"lng_netgram_plugins_x_pw_settings" = "Настройки плагина";
+
+"lng_netgram_plugins_x_pw_size" = "Размер";
+
+"lng_netgram_plugins_x_pw_sort_date" = "По дате установки";
+
+"lng_netgram_plugins_x_pw_sort_enabled" = "Сначала включённые";
+
+"lng_netgram_plugins_x_pw_sort_name" = "По названию";
+
+"lng_netgram_plugins_x_pw_sort_pinned" = "Сначала закреплённые";
+
+"lng_netgram_plugins_x_pw_source" = "Источник";
+
+"lng_netgram_plugins_x_pw_source_other" = "Сторонний файл";
+
+"lng_netgram_plugins_x_pw_source_trusted" = "Доверенный канал";
+
+"lng_netgram_plugins_x_pw_sources" = "Источники";
+
+"lng_netgram_plugins_x_pw_tag_desktop" = "ПК";
+
+"lng_netgram_plugins_x_pw_tag_error" = "Ошибка";
+
+"lng_netgram_plugins_x_pw_tag_partial" = "Частично";
+
+"lng_netgram_plugins_x_pw_tag_ported" = "Перенесён";
+
+"lng_netgram_plugins_x_pw_trusted" = "Доверенные";
+
+"lng_netgram_plugins_x_secret_bar" = "Сообщение содержит токен, ключ или пароль";
+
+"lng_netgram_text_file_preview" = "Предпросмотр загруженных текстовых файлов и кода";
+
+"lng_netgram_secret_warning" = "Предупреждать о паролях и ключах в сообщениях";

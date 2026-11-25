@@ -5,6 +5,7 @@ class HistoryItem;
 
 namespace Ui {
 class VerticalLayout;
+class BoxContent;
 class PopupMenu;
 } // namespace Ui
 
@@ -26,6 +27,10 @@ void PaintPuzzle(QPainter &p, QRectF rect, QColor color);
 void ShowSourceBox(
 	not_null<Window::SessionController*> controller,
 	const QString &path);
+void ShowBoxInPluginsWindow(
+	not_null<Window::SessionController*> controller,
+	object_ptr<Ui::BoxContent> box);
+
 void ShowUnknownSourcesWarning(
 	not_null<Window::SessionController*> controller,
 	Fn<void(bool)> done);
@@ -35,6 +40,7 @@ void ShowInstallBox(
 	bool trusted);
 
 void ChooseAndInstall(not_null<Window::SessionController*> controller);
+void ShowPluginsWindow(not_null<Window::SessionController*> controller);
 void ShowPortBox(
 	not_null<Window::SessionController*> controller,
 	const QString &path);

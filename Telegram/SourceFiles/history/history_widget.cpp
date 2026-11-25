@@ -1,3 +1,4 @@
+#include "netgram/plugins/content_safety.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -586,6 +587,7 @@ HistoryWidget::HistoryWidget(
 				_field->setFocus();
 			});
 	}
+	Netgram::Safety::SetupSecretBar(this, _field.data(), _scroll->geometryValue());
 	if (session().settings().shouldShowStashHint()) {
 		using StashHintManager = HistoryView::Controls::StashHintManager;
 		_stashHintManager = std::make_unique<StashHintManager>(

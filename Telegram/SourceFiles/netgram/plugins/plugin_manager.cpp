@@ -20,12 +20,7 @@ namespace {
 
 using namespace Builder;
 
-const auto kMeta = BuildHelper({
-	.id = PluginManager::Id(),
-	.parentId = AyuMain::Id(),
-	.title = &tr::lng_netgram_plugins_manager_title,
-	.icon = &st::menuIconBotCommands,
-}, [](SectionBuilder &builder) {
+void BuildEngine(SectionBuilder &builder) {
 	const auto controller = builder.controller();
 	const auto toggle = [&](const QString &key, rpl::producer<QString> label) {
 		return builder.addButton({
@@ -96,15 +91,38 @@ const auto kMeta = BuildHelper({
 	if (!Netgram::Plugins::RuntimeError().isEmpty()) {
 		builder.addSubsectionTitle(rpl::single(Netgram::Plugins::RuntimeError()));
 	}
-	builder.addSkip();
-	builder.add([=](const WidgetContext &ctx) {
-		auto list = object_ptr<Ui::VerticalLayout>(ctx.container);
-		Netgram::Plugins::FillPluginsList(list.data(), controller);
-		return SectionBuilder::WidgetToAdd{ .widget = std::move(list) };
+}
+
+const auto kMeta = BuildHelper({
+	.id = PluginManager::Id(),
+	.parentId = AyuMain::Id(),
+	.title = &tr::lng_netgram_plugins_manager_title,
+	.icon = &st::menuIconBotCommands,
+}, [](SectionBuilder &builder) {
+	BuildEngine(builder);
+	builder.addButton({
+		.id = u"netgram/plugins_window"_q,
+		.title = tr::lng_netgram_plugins_manager_title(),
+		.icon = { &st::menuIconBotCommands },
+		.onClick = [=, controller = builder.controller()] {
+			Netgram::Plugins::ShowPluginsWindow(controller);
+		},
 	});
 });
 
 } // namespace
+
+void FillPluginManagerEngine(
+		not_null<Ui::VerticalLayout*> container,
+		not_null<Window::SessionController*> controller) {
+	auto builder = Builder::SectionBuilder(Builder::WidgetContext{
+		.container = container,
+		.controller = controller,
+		.showOther = [=](Type type) { controller->showSettings(type); },
+		.isPaused = [] { return false; },
+	});
+	BuildEngine(builder);
+}
 
 PluginManager::PluginManager(QWidget *parent, not_null<Window::SessionController*> controller)
 : Section(parent, controller) {
